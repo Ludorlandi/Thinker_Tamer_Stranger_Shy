@@ -11,6 +11,7 @@ public class PlayerController : MonoBehaviour
     public Transform groundCheck;
     public float groundCheckRadius = 0.1f;
     public LayerMask groundLayer;
+    public LayerMask placeableLayer;
 
     [Header("Coyote Time")]
     public float coyoteTime = 0.15f;
@@ -51,7 +52,7 @@ public class PlayerController : MonoBehaviour
         isGrounded = Physics2D.OverlapCircle(
             groundCheck.position,
             groundCheckRadius,
-            groundLayer
+            groundLayer | placeableLayer
         );
 
         if (isGrounded)
