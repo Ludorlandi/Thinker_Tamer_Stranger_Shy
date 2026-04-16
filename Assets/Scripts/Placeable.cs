@@ -10,6 +10,9 @@ public class Placeable : MonoBehaviour
     [Header("Snap Settings")]
     public float snapSpeed = 15f;
 
+    [Tooltip("Layer da controllare per la compenetrazione (di default solo 'Placeable'). NON includere Ground/muri.")]
+    public LayerMask overlapCheckMask = 0;
+
     private bool isDragging = false;
     private Vector3 offset;
     private Camera cam;
@@ -134,19 +137,26 @@ public class Placeable : MonoBehaviour
     {
         Collider2D[] ownColliders = GetComponentsInChildren<Collider2D>();
         var results = new System.Collections.Generic.List<Collider2D>();
+
         var filter = new ContactFilter2D();
-        filter.useTriggers = false; // ignora trigger (Key, LockBlock)
+        filter.useTriggers = false;
+
+        // Usa la maschera configurata; se non impostata, default = solo layer "Placeable"
+        int mask = overlapCheckMask.value != 0
+            ? overlapCheckMask.value
+            : LayerMask.GetMask("Placeable");
+        filter.useLayerMask = true;
+        filter.layerMask = mask;
 
         foreach (var col in ownColliders)
         {
-            if (col.isTrigger) continue; // salta i nostri trigger
+            if (col.isTrigger) continue;
 
             results.Clear();
             col.Overlap(filter, results);
 
             foreach (var hit in results)
             {
-                // Se il collider non appartiene a questo pezzo è una compenetrazione
                 bool isOwn = System.Array.Exists(ownColliders, c => c == hit);
                 if (!isOwn) return true;
             }

@@ -6,6 +6,9 @@ public class PlayerController : MonoBehaviour
     [Header("Movement")]
     public float moveSpeed = 5f;
     public float jumpForce = 12f;
+    [Range(0f, 1f)]
+    [Tooltip("Moltiplicatore velocità orizzontale in aria (0 = niente controllo, 1 = stesso del suolo)")]
+    public float airControlMultiplier = 0.4f;
 
     [Header("Ground Check")]
     public Transform groundCheck;
@@ -44,7 +47,8 @@ public class PlayerController : MonoBehaviour
     void HandleMovement()
     {
         float horizontalInput = Input.GetAxisRaw("Horizontal");
-        rb.linearVelocity = new Vector2(horizontalInput * moveSpeed, rb.linearVelocity.y);
+        float speed = isGrounded ? moveSpeed : moveSpeed * airControlMultiplier;
+        rb.linearVelocity = new Vector2(horizontalInput * speed, rb.linearVelocity.y);
     }
 
     void CheckGround()
