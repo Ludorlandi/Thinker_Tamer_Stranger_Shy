@@ -14,10 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SoundLibrary
   sounds:
   - id: 0
-    variants: []
-    volume: 1
-    pitchMin: 0.95
-    pitchMax: 1.1
+    variants:
+    - {fileID: 8300000, guid: e1b8172135cd77f499783a92ace2ccbd, type: 3}
+    - {fileID: 8300000, guid: a218b046f0167e145b518b073d990848, type: 3}
+    - {fileID: 8300000, guid: 13bb9d2241354d94f8802e84a46d1480, type: 3}
+    volume: 0.5
+    pitchMin: 0.65
+    pitchMax: 0.8
   - id: 1
     variants: []
     volume: 0.8
