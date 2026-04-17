@@ -45,10 +45,25 @@ public class Placeable : MonoBehaviour
     [Range(0f, 15f)]
     public float bobInclinazione = 3f;
 
+    [Header("Hover Effect")]
+    [Tooltip("Scala raggiunta quando il mouse è sopra. Es: 1.15 = 15% più grande")]
+    [Range(1f, 1.5f)]
+    public float hoverScale = 1.15f;
+
+    [Tooltip("Velocità con cui la scala cresce/decresce durante l'hover")]
+    [Range(1f, 20f)]
+    public float hoverScaleSpeed = 10f;
+
+    [Tooltip("Quanto aumentano ampiezza e inclinazione del bob durante l'hover")]
+    [Range(1f, 4f)]
+    public float hoverBobMultiplier = 2f;
+
     private bool isUnlocked = false;
     private SpriteRenderer[] spriteRenderers;
     private float bobPhase = 0f;
     private Vector3 visualCenterOffset;
+    private bool isHovered = false;
+    private float currentScaleFactor = 1f;
 
     void Start()
     {
@@ -121,22 +136,26 @@ public class Placeable : MonoBehaviour
             }
         }
 
+        // Hover scale: lerp verso hoverScale se hovering, altrimenti torna a 1
+        bool canHover = isUnlocked && !isAnchored && !isDragging && !isSnapping;
+        float targetScaleFactor = (canHover && isHovered) ? hoverScale : 1f;
+        currentScaleFactor = Mathf.Lerp(currentScaleFactor, targetScaleFactor, Time.deltaTime * hoverScaleSpeed);
+        transform.localScale = Vector3.one * currentScaleFactor;
+
         // Oscillazione idle: attiva solo se sbloccato, fermo, non ancorato
         if (isUnlocked && !isDragging && !isSnapping && !isAnchored)
         {
+            float mult = (isHovered) ? hoverBobMultiplier : 1f;
             bobPhase += Time.deltaTime * bobVelocita * Mathf.PI * 2f;
             float sine = Mathf.Sin(bobPhase);
-            float angle = sine * bobInclinazione;
+            float angle = sine * bobInclinazione * mult;
 
-            // Il centro visivo sale/scende col bob
-            Vector3 worldCenter = startPosition + visualCenterOffset + new Vector3(0f, sine * bobAltezza, 0f);
-            // Il root si posiziona in modo che la rotazione avvenga attorno al centro visivo
+            Vector3 worldCenter = startPosition + visualCenterOffset + new Vector3(0f, sine * bobAltezza * mult, 0f);
             transform.position = worldCenter - (Quaternion.Euler(0f, 0f, angle) * visualCenterOffset);
             transform.rotation = Quaternion.Euler(0f, 0f, angle);
         }
         else if (!isDragging && !isSnapping)
         {
-            // Resetta rotazione quando ancorato o bloccato
             transform.rotation = Quaternion.identity;
         }
     }
@@ -171,6 +190,32 @@ public class Placeable : MonoBehaviour
     {
         if (!isDragging) return;
         transform.position = GetMouseWorldPos() + offset;
+    }
+
+    void OnMouseEnter()
+    {
+        if (isUnlocked && !isAnchored)
+            isHovered = true;
+    }
+
+    void OnMouseExit()
+    {
+        isHovered = false;
+    }
+
+    void OnMouseOver()
+    {
+        // Tasto destro su un Placeable ancorato → torna alla posizione di partenza
+        if (isAnchored && Input.GetMouseButtonDown(1))
+        {
+            currentLock.GetComponent<LockBlock>().SetFree();
+            currentLock = null;
+            isAnchored = false;
+            transform.position = startPosition;
+            transform.localScale = Vector3.one;
+            transform.rotation = Quaternion.identity;
+            currentScaleFactor = 1f;
+        }
     }
 
     void OnMouseUp()
