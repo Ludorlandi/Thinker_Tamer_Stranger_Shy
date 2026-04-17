@@ -110,11 +110,13 @@ public class Placeable : MonoBehaviour
                     currentLock = null;
                     isSnapping = false;
                     transform.position = startPosition;
+                    SoundManager.Instance?.PlaySFX(SoundID.PlaceableFailedSnap);
                 }
                 else
                 {
                     isSnapping = false;
                     isAnchored = true;
+                    SoundManager.Instance?.PlaySFX(SoundID.PlaceableAnchored);
                 }
             }
         }
@@ -141,7 +143,11 @@ public class Placeable : MonoBehaviour
 
     void OnMouseDown()
     {
-        if (!isUnlocked) return;
+        if (!isUnlocked)
+        {
+            SoundManager.Instance?.PlaySFX(SoundID.PlaceableLockedClick);
+            return;
+        }
 
         // Se è ancorato, liberalo e permettine il riprelievo
         if (isAnchored)
@@ -155,6 +161,7 @@ public class Placeable : MonoBehaviour
         isSnapping = false;
         transform.rotation = Quaternion.identity;
         offset = transform.position - GetMouseWorldPos();
+        SoundManager.Instance?.PlaySFX(SoundID.PlaceableDragStart);
 
         if (player != null)
             player.SetActive(false);

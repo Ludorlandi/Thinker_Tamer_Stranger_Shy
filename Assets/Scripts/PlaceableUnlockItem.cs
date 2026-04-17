@@ -11,6 +11,7 @@ public class PlaceableUnlockItem : MonoBehaviour
         if (PlaceableUnlockManager.Instance == null) return;
 
         PlaceableUnlockManager.Instance.Unlock(typeToUnlock);
+        SoundManager.Instance?.PlaySFX(SoundID.PlaceableUnlocked);
         Destroy(gameObject);
     }
 }
