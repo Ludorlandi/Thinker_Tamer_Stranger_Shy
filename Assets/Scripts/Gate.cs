@@ -29,8 +29,10 @@ public class Gate : MonoBehaviour
         var pc = player.GetComponent<PlayerController>();
         if (pc != null) pc.SetEditMode(true);
 
-        // Dissolvenza in nero (0.25s)
-        if (ScreenFade.Instance != null)
+        // Glitch out
+        if (GlitchTransition.Instance != null)
+            yield return StartCoroutine(GlitchTransition.Instance.GlitchOut(0.30f));
+        else if (ScreenFade.Instance != null)
             yield return StartCoroutine(ScreenFade.Instance.FadeOut(0.25f));
 
         // Teletrasporto
@@ -49,8 +51,10 @@ public class Gate : MonoBehaviour
             }
         }
 
-        // Dissolvenza da nero (0.25s)
-        if (ScreenFade.Instance != null)
+        // Glitch in
+        if (GlitchTransition.Instance != null)
+            yield return StartCoroutine(GlitchTransition.Instance.GlitchIn(0.35f));
+        else if (ScreenFade.Instance != null)
             yield return StartCoroutine(ScreenFade.Instance.FadeIn(0.25f));
 
         // Riabilita il player

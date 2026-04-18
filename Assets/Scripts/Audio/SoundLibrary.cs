@@ -8,7 +8,8 @@ public enum SoundID
     PlaceableFailedSnap,
     PlaceableLockedClick,
     PlaceableUnlocked,
-    GateTraversal
+    GateTraversal,
+    UnlockScreenAppear
 }
 
 public enum MusicID

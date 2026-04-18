@@ -29,6 +29,9 @@ public class PlaceableUnlockManager : MonoBehaviour
             if (p.placeableType == type)
                 p.SetUnlocked();
         }
+
+        // Mostra la schermata di sblocco
+        UnlockScreen.Instance?.Show(type);
     }
 
     public bool IsUnlocked(PlaceableTypeSO type)
