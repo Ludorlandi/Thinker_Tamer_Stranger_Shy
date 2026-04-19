@@ -19,6 +19,7 @@ public class Gate : MonoBehaviour
         StartCooldown();
         linkedGate.StartCooldown();
 
+        SoundManager.Instance?.PlaySFX(SoundID.GateTraversal);
         StartCoroutine(TeleportRoutine(other));
     }
 

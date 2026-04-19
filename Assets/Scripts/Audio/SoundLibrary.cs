@@ -11,7 +11,8 @@ public enum SoundID
     GateTraversal,
     UnlockScreenAppear,
     JumpPadBounce,
-    OrbActivate
+    OrbActivate,
+    PlaceableReturn
 }
 
 public enum MusicID

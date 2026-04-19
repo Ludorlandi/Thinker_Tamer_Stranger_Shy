@@ -220,6 +220,7 @@ public class Placeable : MonoBehaviour
             transform.localScale = Vector3.one;
             transform.rotation = Quaternion.identity;
             currentScaleFactor = 1f;
+            SoundManager.Instance?.PlaySFX(SoundID.PlaceableReturn);
         }
     }
 
@@ -243,6 +244,7 @@ public class Placeable : MonoBehaviour
         else
         {
             transform.position = startPosition;
+            SoundManager.Instance?.PlaySFX(SoundID.PlaceableReturn);
         }
 
         if (player != null)
