@@ -136,7 +136,6 @@ public class Placeable : MonoBehaviour
                 {
                     isSnapping = false;
                     isAnchored = true;
-                    SoundManager.Instance?.PlaySFX(SoundID.PlaceableAnchored);
                 }
             }
         }
@@ -238,8 +237,8 @@ public class Placeable : MonoBehaviour
         if (currentLock != null)
         {
             isSnapping = true;
-            // Occupa la serratura
             currentLock.GetComponent<LockBlock>().SetOccupied(this);
+            SoundManager.Instance?.PlaySFX(SoundID.PlaceableAnchored);
         }
         else
         {
