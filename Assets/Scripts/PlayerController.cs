@@ -75,6 +75,16 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    public bool IsGrounded => isGrounded;
+
+    // Chiamato da sistemi esterni (JumpPad, OrbJump) per imporre un salto con forza specifica.
+    public void ForceJump(float force)
+    {
+        if (isInEditMode) return;
+        rb.linearVelocity = new Vector2(rb.linearVelocity.x, force);
+        SoundManager.Instance?.PlaySFX(SoundID.PlayerJump);
+    }
+
     public void SetEditMode(bool active)
     {
         isInEditMode = active;

@@ -58,6 +58,8 @@ public class Placeable : MonoBehaviour
     [Range(1f, 4f)]
     public float hoverBobMultiplier = 2f;
 
+    public bool IsAnchored => isAnchored;
+
     private bool isUnlocked = false;
     private SpriteRenderer[] spriteRenderers;
     private float bobPhase = 0f;

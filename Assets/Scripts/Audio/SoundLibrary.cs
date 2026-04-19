@@ -9,7 +9,9 @@ public enum SoundID
     PlaceableLockedClick,
     PlaceableUnlocked,
     GateTraversal,
-    UnlockScreenAppear
+    UnlockScreenAppear,
+    JumpPadBounce,
+    OrbActivate
 }
 
 public enum MusicID
