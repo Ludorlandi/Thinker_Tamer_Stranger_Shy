@@ -2,6 +2,9 @@ using UnityEngine;
 
 public class Placeable : MonoBehaviour
 {
+    public static event System.Action OnAnyDragStart;
+    public static event System.Action OnAnyDragEnd;
+
     [Header("References")]
     public GameObject player;
 
@@ -183,6 +186,7 @@ public class Placeable : MonoBehaviour
         transform.rotation = Quaternion.identity;
         offset = transform.position - GetMouseWorldPos();
         SoundManager.Instance?.PlaySFX(SoundID.PlaceableDragStart);
+        OnAnyDragStart?.Invoke();
 
         if (player != null)
             player.SetActive(false);
@@ -223,6 +227,7 @@ public class Placeable : MonoBehaviour
     void OnMouseUp()
     {
         isDragging = false;
+        OnAnyDragEnd?.Invoke();
 
         // Se non c'è un lock rilevato dal trigger, cerca il più vicino nel raggio
         if (currentLock == null && keyTransform != null)

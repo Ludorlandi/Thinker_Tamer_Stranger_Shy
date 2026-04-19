@@ -13,7 +13,7 @@ public class LevelGridEditor : EditorWindow
     private bool       paintMode     = false;
     private bool       eraseMode     = false;
     private float      gridSize      = 1f;
-    private Color      tileColor     = new Color(1f, 0.75f, 0.2f, 1f);
+    private Color      tileColor     = Color.white;
     private int        sortingOrder  = 0;
     private int        selectedLayer = 8; // Ground
     private GameObject parentGO      = null;
@@ -22,6 +22,8 @@ public class LevelGridEditor : EditorWindow
 
     // ── Internals ─────────────────────────────────────────────────────────────
     private Sprite   tileSprite;
+    private Sprite[] floorSprites;
+    private float    animFrameDuration = 2f;
     private string[] layerNames;
     private int[]    layerIndices;
     private Vector3  lastSnapped = Vector3.positiveInfinity;
@@ -34,7 +36,7 @@ public class LevelGridEditor : EditorWindow
     void OnEnable()
     {
         SceneView.duringSceneGui += OnSceneGUI;
-        tileSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/WhiteSquare.png");
+        LoadFloorSprites();
         BuildLayerArrays();
     }
 
@@ -42,6 +44,17 @@ public class LevelGridEditor : EditorWindow
     {
         SceneView.duringSceneGui -= OnSceneGUI;
         SceneView.RepaintAll();
+    }
+
+    void LoadFloorSprites()
+    {
+        var all = AssetDatabase.LoadAllAssetsAtPath("Assets/Sprites/FloorCube-Sheet.png");
+        var list = new System.Collections.Generic.List<Sprite>();
+        foreach (var a in all)
+            if (a is Sprite s) list.Add(s);
+        list.Sort((a, b) => string.Compare(a.name, b.name, System.StringComparison.Ordinal));
+        floorSprites = list.ToArray();
+        tileSprite = floorSprites.Length > 0 ? floorSprites[0] : null;
     }
 
     void BuildLayerArrays()
@@ -106,8 +119,9 @@ public class LevelGridEditor : EditorWindow
         {
             if (hasSprite)
             {
-                tileColor    = EditorGUILayout.ColorField("Colore", tileColor);
-                sortingOrder = EditorGUILayout.IntField("Sorting Order", sortingOrder);
+                tileColor         = EditorGUILayout.ColorField("Colore", tileColor);
+                sortingOrder      = EditorGUILayout.IntField("Sorting Order", sortingOrder);
+                animFrameDuration = EditorGUILayout.Slider("Durata frame (s)", animFrameDuration, 0.1f, 10f);
             }
             if (hasCollider && !hasSprite)
                 EditorGUILayout.HelpBox("Collider invisibile (niente sprite).", MessageType.Info);
@@ -252,6 +266,13 @@ public class LevelGridEditor : EditorWindow
                 sr.sprite = tileSprite;
                 sr.color  = tileColor;
                 sr.sortingOrder = sortingOrder;
+
+                if (floorSprites != null && floorSprites.Length > 1)
+                {
+                    var anim = go.AddComponent<FloorTileAnimator>();
+                    anim.sprites = floorSprites;
+                    anim.frameDuration = animFrameDuration;
+                }
             }
 
             if (tileType == TileType.SoloCollider || tileType == TileType.SpriteCollider)
