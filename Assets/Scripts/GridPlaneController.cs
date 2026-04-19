@@ -2,13 +2,14 @@ using UnityEngine;
 
 /// <summary>
 /// Applica la texture griglia al Plane di sfondo e la allinea alla griglia del Level Grid Editor.
-/// Scambia la texture quando un Placeable viene trascinato (Grid Edit) e la ripristina al rilascio.
+/// Quando un Placeable viene trascinato, il pulse si ferma e la griglia va a maxAlpha.
+/// La griglia pulsa tra minAlpha e maxAlpha con periodo pulseDuration * 2.
 ///
 /// Come allineare la griglia:
 ///   1. Rimani in EDIT MODE (non play).
-///   2. Regola il campo "Manual Offset" nel Inspector: vedrai i cambiamenti live.
-///   3. Una volta allineato, il valore si salva con la scena e funziona identico in play.
-///   NON spostare il Plane transform per allineare: cambia il position e invalida il calcolo.
+///   2. Regola "Manual Offset" nell'Inspector: vedrai i cambiamenti live.
+///   3. Una volta allineato, salva la scena — il valore persiste identico in Play Mode.
+///   NON spostare il Plane transform per allineare.
 /// </summary>
 [ExecuteAlways]
 [RequireComponent(typeof(MeshRenderer))]
@@ -25,14 +26,23 @@ public class GridPlaneController : MonoBehaviour
     [Min(1)] public int cellsPerTextureTile = 1;
 
     [Header("Fine-tuning (regola in Edit Mode — live preview)")]
-    [Tooltip("Offset UV aggiuntivo per allineare manualmente la griglia al livello. " +
-             "Regola X e Y finché le linee coincidono con i bordi dei tile. Range 0-1.")]
+    [Tooltip("Offset UV aggiuntivo per allineare manualmente la griglia. Range 0–1.")]
     public Vector2 manualOffset;
+
+    [Header("Pulse Effect")]
+    [Tooltip("Attiva/disattiva il pulse di opacità.")]
+    public bool enablePulse = true;
+    [Tooltip("Opacità minima della griglia (0 = trasparente, 1 = opaco).")]
+    [Range(0f, 1f)] public float minAlpha = 0.5f;
+    [Tooltip("Opacità massima della griglia.")]
+    [Range(0f, 1f)] public float maxAlpha = 1f;
+    [Tooltip("Secondi per passare dal minimo al massimo (e viceversa).")]
+    [Min(0.1f)] public float pulseDuration = 3f;
 
     // ── Internals ─────────────────────────────────────────────────────────────
     private MeshRenderer _mr;
-    private Material _mat;
-    private bool _isDragging;
+    private Material     _mat;
+    private bool         _isDragging;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -55,7 +65,15 @@ public class GridPlaneController : MonoBehaviour
         Placeable.OnAnyDragEnd   -= OnDragEnd;
     }
 
-    // Chiamato ogni volta che cambi un valore nell'Inspector (funziona in Edit Mode)
+    void Update()
+    {
+        if (_mat == null) return;
+        // Durante il drag: niente pulse, opacità massima
+        float alpha = (_isDragging || !enablePulse) ? maxAlpha : ComputePulseAlpha();
+        _mat.color = new Color(1f, 1f, 1f, alpha);
+    }
+
+    // Chiamato quando cambi un valore nell'Inspector (Edit Mode live preview)
     void OnValidate()
     {
         if (_mr == null) _mr = GetComponent<MeshRenderer>();
@@ -68,12 +86,23 @@ public class GridPlaneController : MonoBehaviour
     void OnDragStart() { _isDragging = true;  ApplyTexture(gridEdit);     }
     void OnDragEnd()   { _isDragging = false; ApplyTexture(gridStandard); }
 
-    // ── Core ──────────────────────────────────────────────────────────────────
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    float ComputePulseAlpha()
+    {
+        // Onda sinusoidale: parte a minAlpha, sale a maxAlpha in pulseDuration secondi,
+        // poi torna a minAlpha, e così via.
+        // sin va da -1 a 1 con periodo 2π; vogliamo periodo = pulseDuration * 2.
+        float t = Time.realtimeSinceStartup;
+        float sine = Mathf.Sin(t * Mathf.PI / pulseDuration - Mathf.PI * 0.5f); // -1..1, inizia a -1
+        return Mathf.Lerp(minAlpha, maxAlpha, (sine + 1f) * 0.5f);
+    }
 
     void EnsureMaterial()
     {
         if (_mat != null) return;
-        _mat = new Material(Shader.Find("Unlit/Texture")) { name = "GridPlane_Instance" };
+        // Custom/UnlitTransparentColor: campiona la texture e moltiplica per _Color (incluso alpha).
+        _mat = new Material(Shader.Find("Custom/UnlitTransparentColor")) { name = "GridPlane_Instance" };
         if (_mr != null) _mr.sharedMaterial = _mat;
     }
 
@@ -81,8 +110,8 @@ public class GridPlaneController : MonoBehaviour
     {
         if (_mat == null || tex == null) return;
 
-        // Il Plane di Unity è 10×10 unità locali.
-        // Con rotazione (-90°, 0, 0): local X → world X, local Z → world Y.
+        // Plane Unity = 10×10 unità locali.
+        // Rotazione (-90°, 0, 0): local X → world X, local Z → world Y.
         float worldWidth  = 10f * transform.lossyScale.x;
         float worldHeight = 10f * transform.lossyScale.z;
         float cellWorld   = gridSize * cellsPerTextureTile;
@@ -90,8 +119,6 @@ public class GridPlaneController : MonoBehaviour
         float tilingX = worldWidth  / cellWorld;
         float tilingY = worldHeight / cellWorld;
 
-        // Auto-alignment: calcola l'offset base per mettere le linee agli interi world.
-        // manualOffset permette di correggere eventuali scostamenti residui.
         float leftEdge   = transform.position.x - worldWidth  * 0.5f;
         float bottomEdge = transform.position.y - worldHeight * 0.5f;
 
