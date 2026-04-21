@@ -206,13 +206,14 @@ public class PlaceableJumpA : MonoBehaviour
         }
 
         // Click destro su orb piazzato: riporta alla startPosition
-        if (mouseOver && Input.GetMouseButtonDown(1) && isPlaced)
+        if (mouseOver && Input.GetMouseButtonDown(1) && isPlaced && !Input.GetMouseButtonUp(0))
         {
             isPlaced = false;
             transform.position = startPosition;
             transform.localScale = baseScale;
             transform.rotation = Quaternion.identity;
             currentScaleFactor = 1f;
+            SoundManager.Instance?.PlaySFX(SoundID.PlaceableReturn);
         }
     }
 
