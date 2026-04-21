@@ -30,6 +30,13 @@ public class PlaceableJumpA : MonoBehaviour
     [Header("References")]
     public GameObject player;
 
+    // ── Sprites ──────────────────────────────────────────────────
+    [Header("Sprites")]
+    [Tooltip("Sprite normale del placeable.")]
+    public Sprite saltoIdleSprite;
+    [Tooltip("Sprite mostrato all'attivazione dell'orb.")]
+    public Sprite saltoActivatedSprite;
+
     // ── Placement ────────────────────────────────────────────────
     [Header("Placement")]
     [Tooltip("Dimensione del box usato per il check compenetrazione (1x1 = un blocco).")]
@@ -73,6 +80,15 @@ public class PlaceableJumpA : MonoBehaviour
     [Range(0.5f, 5f)]
     public float pulseFrequency = 1.8f;
 
+    // ── Float (quando piazzato) ───────────────────────────────────
+    [Header("Float (quando piazzato)")]
+    [Tooltip("Altezza della fluttuazione verticale quando piazzato.")]
+    [Range(0f, 0.3f)]
+    public float floatAltezza = 0.06f;
+    [Tooltip("Velocità della fluttuazione quando piazzato.")]
+    [Range(0.5f, 5f)]
+    public float floatVelocita = 1.2f;
+
     // ── Stato interno ────────────────────────────────────────────
     private bool isUnlocked = false;
     private bool isDragging = false;
@@ -88,6 +104,9 @@ public class PlaceableJumpA : MonoBehaviour
     private bool isHovered = false;
     private float currentScaleFactor = 1f;
     private float pulsePhase = 0f;
+    private float floatPhase = 0f;
+    private SpriteRenderer mainSpriteRenderer;
+    private Vector3 baseScale;
 
     // Orb state
     private bool playerInOrb = false;
@@ -101,7 +120,13 @@ public class PlaceableJumpA : MonoBehaviour
         cam = Camera.main;
         col = GetComponent<Collider2D>();
         startPosition = transform.position;
+        baseScale = transform.localScale;
         spriteRenderers = GetComponentsInChildren<SpriteRenderer>();
+        mainSpriteRenderer = GetComponent<SpriteRenderer>();
+        if (mainSpriteRenderer == null && spriteRenderers.Length > 0)
+            mainSpriteRenderer = spriteRenderers[0];
+        if (mainSpriteRenderer != null && saltoIdleSprite != null)
+            mainSpriteRenderer.sprite = saltoIdleSprite;
 
         if (player != null)
             playerController = player.GetComponent<PlayerController>();
@@ -175,7 +200,7 @@ public class PlaceableJumpA : MonoBehaviour
         {
             isPlaced = false;
             transform.position = startPosition;
-            transform.localScale = Vector3.one;
+            transform.localScale = baseScale;
             transform.rotation = Quaternion.identity;
             currentScaleFactor = 1f;
         }
@@ -219,7 +244,7 @@ public class PlaceableJumpA : MonoBehaviour
             // Pulse lento quando piazzato
             pulsePhase += Time.deltaTime * pulseFrequency * Mathf.PI * 2f;
             float pulse = 1f + Mathf.Sin(pulsePhase) * pulseAmplitude;
-            transform.localScale = Vector3.one * pulse;
+            transform.localScale = baseScale * pulse;
         }
         else
         {
@@ -227,7 +252,7 @@ public class PlaceableJumpA : MonoBehaviour
             bool canHover = isUnlocked && !isPlaced;
             float targetScale = (canHover && isHovered) ? hoverScale : 1f;
             currentScaleFactor = Mathf.Lerp(currentScaleFactor, targetScale, Time.deltaTime * hoverScaleSpeed);
-            transform.localScale = Vector3.one * currentScaleFactor;
+            transform.localScale = baseScale * currentScaleFactor;
         }
     }
 
@@ -245,7 +270,13 @@ public class PlaceableJumpA : MonoBehaviour
             transform.position = startPosition + new Vector3(0f, sine * bobAltezza * mult, 0f);
             transform.rotation = Quaternion.Euler(0f, 0f, angle);
         }
-        else if (!isPlaced)
+        else if (isPlaced)
+        {
+            // Float quando piazzato
+            floatPhase += Time.deltaTime * floatVelocita * Mathf.PI * 2f;
+            transform.position = startPosition + new Vector3(0f, Mathf.Sin(floatPhase) * floatAltezza, 0f);
+        }
+        else
         {
             transform.rotation = Quaternion.identity;
         }
@@ -335,6 +366,9 @@ public class PlaceableJumpA : MonoBehaviour
 
     IEnumerator OrbActivateEffect()
     {
+        if (mainSpriteRenderer != null && saltoActivatedSprite != null)
+            mainSpriteRenderer.sprite = saltoActivatedSprite;
+
         float duration = 0.25f;
         float elapsed = 0f;
         while (elapsed < duration)
@@ -342,9 +376,12 @@ public class PlaceableJumpA : MonoBehaviour
             elapsed += Time.deltaTime;
             float t = elapsed / duration;
             float burst = 1f + Mathf.Sin(t * Mathf.PI) * 0.35f;
-            transform.localScale = Vector3.one * burst;
+            transform.localScale = baseScale * burst;
             yield return null;
         }
+
+        if (mainSpriteRenderer != null && saltoIdleSprite != null)
+            mainSpriteRenderer.sprite = saltoIdleSprite;
         // Torna al pulse normale (gestito in UpdateScale)
     }
 
