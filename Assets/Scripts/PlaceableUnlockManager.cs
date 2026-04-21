@@ -5,6 +5,8 @@ public class PlaceableUnlockManager : MonoBehaviour
 {
     public static PlaceableUnlockManager Instance { get; private set; }
 
+    public static event System.Action<PlaceableTypeSO> OnTypeUnlocked;
+
     private readonly HashSet<PlaceableTypeSO> unlockedTypes = new HashSet<PlaceableTypeSO>();
 
     void Awake()
@@ -34,6 +36,9 @@ public class PlaceableUnlockManager : MonoBehaviour
             if (p.placeableType == type)
                 p.SetUnlocked();
         }
+
+        // Notifica listener esterni
+        OnTypeUnlocked?.Invoke(type);
 
         // Mostra la schermata di sblocco
         UnlockScreen.Instance?.Show(type);

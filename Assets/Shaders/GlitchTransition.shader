@@ -5,6 +5,7 @@ Shader "UI/GlitchTransition"
         _MainTex ("Texture", 2D) = "white" {}
         _Intensity ("Intensity", Range(0,1)) = 0
         _GlitchTime ("Glitch Time", Float) = 0
+        _GlitchColor ("Glitch Color", Color) = (0.35, 0.65, 0.50, 1)
     }
     SubShader
     {
@@ -49,6 +50,7 @@ Shader "UI/GlitchTransition"
             float4    _MainTex_ST;
             float     _Intensity;
             float     _GlitchTime;
+            float4    _GlitchColor;
 
             // ---- hash helpers ----
             float hash2(float2 p)
@@ -105,13 +107,13 @@ Shader "UI/GlitchTransition"
 
                 // ---- Bright horizontal flash lines ----
                 float flashLine = step(0.91, hash2(float2(floor(uv.y * 32.0), floor(t * 16.0))));
-                float3 flashCol = float3(0.0, flashLine * 0.55, flashLine * 0.35) * ins;
+                float3 flashCol = _GlitchColor.rgb * float3(flashLine * 0.55, flashLine * 0.55, flashLine * 0.35) * ins;
 
-                // ---- Compose final color (virus-green palette) ----
+                // ---- Compose final color (tinted by _GlitchColor) ----
                 float3 col;
-                col.r = noiseR * 0.35 * ins;
-                col.g = (noiseG * 0.65 + 0.08) * ins;
-                col.b = noiseB * 0.50 * ins;
+                col.r = (noiseR + 0.08) * _GlitchColor.r * ins;
+                col.g = (noiseG + 0.08) * _GlitchColor.g * ins;
+                col.b = (noiseB + 0.08) * _GlitchColor.b * ins;
                 col  += flashCol;
                 col  *= (1.0 - scanDark);
 
@@ -121,7 +123,7 @@ Shader "UI/GlitchTransition"
                 // Full-frame glitch flicker
                 float flicker = step(0.965, hash1(floor(t * 45.0)));
                 alpha = saturate(alpha + flicker * 0.55);
-                col   = lerp(col, float3(0.0, 0.85, 0.45), flicker * ins * 0.55);
+                col   = lerp(col, _GlitchColor.rgb * 1.3, flicker * ins * 0.55);
 
                 return fixed4(col, alpha * IN.color.a);
             }

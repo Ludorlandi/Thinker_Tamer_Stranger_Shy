@@ -8,6 +8,8 @@ public class GlitchTransition : MonoBehaviour
 
     private Material glitchMat;
     private Image    glitchImage;
+    private static readonly int ColorProp = Shader.PropertyToID("_GlitchColor");
+    private Color defaultColor = new Color(0.35f, 0.65f, 0.50f, 1f);
 
     void Awake()
     {
@@ -26,6 +28,9 @@ public class GlitchTransition : MonoBehaviour
         glitchMat.SetFloat("_Intensity",   Mathf.Clamp01(v));
         glitchMat.SetFloat("_GlitchTime",  Time.unscaledTime);
     }
+
+    public void SetColor(Color c)   => glitchMat.SetColor(ColorProp, c);
+    public void ResetColor()        => glitchMat.SetColor(ColorProp, defaultColor);
 
     // Glitch crescente fino a schermo pieno (~0.3s consigliato)
     public IEnumerator GlitchOut(float duration)
