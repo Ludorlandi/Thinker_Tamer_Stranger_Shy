@@ -10,6 +10,9 @@ public class Placeable : MonoBehaviour
 
     public Transform keyTransform;
 
+    [Tooltip("Seconda chiave (opzionale). Se assegnata, ENTRAMBE le chiavi devono trovare un LockBlock libero per ancorarsi.")]
+    public Transform keyTransform2;
+
     [Header("Unlock")]
     [Tooltip("Il tipo di questo Placeable. Deve corrispondere al PlaceableUnlockItem nella scena.")]
     public PlaceableTypeSO placeableType;
@@ -32,6 +35,7 @@ public class Placeable : MonoBehaviour
     private Vector3 startPosition;
 
     private Transform currentLock = null;
+    private Transform currentLock2 = null;
     private bool isAnchored = false;
     private bool isSnapping = false;
 
@@ -98,8 +102,15 @@ public class Placeable : MonoBehaviour
     {
         if (isSnapping && !isDragging)
         {
-            if (currentLock == null || keyTransform == null)
+            bool dualKey = keyTransform2 != null;
+
+            if (currentLock == null || keyTransform == null || (dualKey && currentLock2 == null))
             {
+                // Lock perso durante lo snap: annulla tutto
+                currentLock?.GetComponent<LockBlock>()?.SetFree();
+                currentLock2?.GetComponent<LockBlock>()?.SetFree();
+                currentLock = null;
+                currentLock2 = null;
                 isSnapping = false;
                 transform.position = startPosition;
                 return;
@@ -123,11 +134,13 @@ public class Placeable : MonoBehaviour
                 // Forza Unity ad aggiornare i collider alla nuova posizione prima del check
                 Physics2D.SyncTransforms();
 
-                if (IsOverlappingOtherBlocks(currentLock))
+                if (IsOverlappingOtherBlocks(currentLock, currentLock2))
                 {
                     // Compenetrazione: annulla ancoraggio e torna all'inizio
                     currentLock.GetComponent<LockBlock>().SetFree();
+                    currentLock2?.GetComponent<LockBlock>()?.SetFree();
                     currentLock = null;
+                    currentLock2 = null;
                     isSnapping = false;
                     transform.position = startPosition;
                     SoundManager.Instance?.PlaySFX(SoundID.PlaceableFailedSnap);
@@ -175,8 +188,10 @@ public class Placeable : MonoBehaviour
         // Se è ancorato, liberalo e permettine il riprelievo
         if (isAnchored)
         {
-            currentLock.GetComponent<LockBlock>().SetFree();
+            currentLock?.GetComponent<LockBlock>()?.SetFree();
+            currentLock2?.GetComponent<LockBlock>()?.SetFree();
             currentLock = null;
+            currentLock2 = null;
             isAnchored = false;
         }
 
@@ -213,8 +228,10 @@ public class Placeable : MonoBehaviour
         // Tasto destro su un Placeable ancorato → torna alla posizione di partenza
         if (isAnchored && Input.GetMouseButtonDown(1))
         {
-            currentLock.GetComponent<LockBlock>().SetFree();
+            currentLock?.GetComponent<LockBlock>()?.SetFree();
+            currentLock2?.GetComponent<LockBlock>()?.SetFree();
             currentLock = null;
+            currentLock2 = null;
             isAnchored = false;
             transform.position = startPosition;
             transform.localScale = Vector3.one;
@@ -231,18 +248,27 @@ public class Placeable : MonoBehaviour
 
         // Se non c'è un lock rilevato dal trigger, cerca il più vicino nel raggio
         if (currentLock == null && keyTransform != null)
-        {
-            currentLock = FindNearestFreeLock();
-        }
+            currentLock = FindNearestFreeLock(keyTransform);
 
-        if (currentLock != null)
+        bool dualKey = keyTransform2 != null;
+        if (dualKey && currentLock2 == null && keyTransform2 != null)
+            currentLock2 = FindNearestFreeLock(keyTransform2);
+
+        bool canSnap = currentLock != null && (!dualKey || currentLock2 != null);
+
+        if (canSnap)
         {
             isSnapping = true;
             currentLock.GetComponent<LockBlock>().SetOccupied(this);
+            if (dualKey) currentLock2.GetComponent<LockBlock>().SetOccupied(this);
             SoundManager.Instance?.PlaySFX(SoundID.PlaceableAnchored);
         }
         else
         {
+            currentLock?.GetComponent<LockBlock>()?.SetFree();
+            currentLock2?.GetComponent<LockBlock>()?.SetFree();
+            currentLock = null;
+            currentLock2 = null;
             transform.position = startPosition;
             SoundManager.Instance?.PlaySFX(SoundID.PlaceableReturn);
         }
@@ -256,17 +282,25 @@ public class Placeable : MonoBehaviour
         }
     }
 
-    public void OnKeyEnterLock(Transform lockTransform)
+    public void OnKeyEnterLock(Transform lockTransform, Key sourceKey)
     {
         if (lockTransform.GetComponent<LockBlock>().IsOccupied()) return;
-        currentLock = lockTransform;
+
+        if (keyTransform2 == null || sourceKey.transform == keyTransform)
+            currentLock = lockTransform;
+        else
+            currentLock2 = lockTransform;
     }
 
-    public void OnKeyExitLock()
+    public void OnKeyExitLock(Key sourceKey)
     {
         // Non azzerare currentLock se stiamo già snappando verso di esso
-        if (!isAnchored && !isSnapping)
+        if (isAnchored || isSnapping) return;
+
+        if (keyTransform2 == null || sourceKey.transform == keyTransform)
             currentLock = null;
+        else
+            currentLock2 = null;
     }
 
     public void SetUnlocked()
@@ -282,9 +316,9 @@ public class Placeable : MonoBehaviour
             sr.color = lockedTint;
     }
 
-    Transform FindNearestFreeLock()
+    Transform FindNearestFreeLock(Transform fromKey)
     {
-        Collider2D[] hits = Physics2D.OverlapCircleAll(keyTransform.position, proximitySnapRadius);
+        Collider2D[] hits = Physics2D.OverlapCircleAll(fromKey.position, proximitySnapRadius);
         Transform nearest = null;
         float minDist = float.MaxValue;
 
@@ -304,17 +338,15 @@ public class Placeable : MonoBehaviour
         return nearest;
     }
 
-    bool IsOverlappingOtherBlocks(Transform lockTransform = null)
+    bool IsOverlappingOtherBlocks(Transform lockTransform = null, Transform lockTransform2 = null)
     {
         Collider2D[] ownColliders = GetComponentsInChildren<Collider2D>();
 
-        // Raccoglie tutti i GameObject nella gerarchia del Blocco Lock da ignorare
+        // Raccoglie tutti i GameObject nelle gerarchie dei LockBlock da ignorare
         var excluded = new System.Collections.Generic.HashSet<GameObject>();
-        if (lockTransform != null)
-        {
-            Transform t = lockTransform;
-            while (t != null) { excluded.Add(t.gameObject); t = t.parent; }
-        }
+        void ExcludeHierarchy(Transform t) { while (t != null) { excluded.Add(t.gameObject); t = t.parent; } }
+        if (lockTransform != null) ExcludeHierarchy(lockTransform);
+        if (lockTransform2 != null) ExcludeHierarchy(lockTransform2);
 
         // Se la mask è 0 (non configurata), usa tutto tranne Player
         int mask = overlapCheckMask.value != 0

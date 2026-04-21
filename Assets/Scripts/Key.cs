@@ -8,7 +8,7 @@ public class Key : MonoBehaviour
     {
         if (other.CompareTag("Lock"))
         {
-            parentPlaceable.OnKeyEnterLock(other.transform);
+            parentPlaceable.OnKeyEnterLock(other.transform, this);
         }
     }
 
@@ -16,7 +16,7 @@ public class Key : MonoBehaviour
     {
         if (other.CompareTag("Lock"))
         {
-            parentPlaceable.OnKeyExitLock();
+            parentPlaceable.OnKeyExitLock(this);
         }
     }
 }
