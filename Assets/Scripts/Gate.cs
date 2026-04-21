@@ -7,7 +7,31 @@ public class Gate : MonoBehaviour
     public Transform cameraPosition;
     public float teleportCooldown = 1f;
 
+    [Header("Sprites")]
+    [Tooltip("Frames animazione normale del gate.")]
+    public Sprite[] idleSprites;
+    [Tooltip("Frames animazione all'attivazione del gate.")]
+    public Sprite[] activatedSprites;
+
     private bool onCooldown = false;
+    private FloorTileAnimator animator;
+    private SpriteRenderer sr;
+
+    void Awake()
+    {
+        animator = GetComponent<FloorTileAnimator>();
+        sr = GetComponent<SpriteRenderer>();
+        ApplySprites(idleSprites);
+    }
+
+    void ApplySprites(Sprite[] sprites)
+    {
+        if (sprites == null || sprites.Length == 0) return;
+        if (animator != null)
+            animator.sprites = sprites;
+        else if (sr != null)
+            sr.sprite = sprites[0];
+    }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
@@ -25,6 +49,9 @@ public class Gate : MonoBehaviour
 
     private IEnumerator TeleportRoutine(Collider2D player)
     {
+        // Sprite attivazione
+        ApplySprites(activatedSprites);
+
         // Congela il player durante la transizione
         var rb = player.GetComponent<Rigidbody2D>();
         var pc = player.GetComponent<PlayerController>();
@@ -60,6 +87,9 @@ public class Gate : MonoBehaviour
 
         // Riabilita il player
         if (pc != null) pc.SetEditMode(false);
+
+        // Torna allo sprite idle
+        ApplySprites(idleSprites);
     }
 
     public void StartCooldown()

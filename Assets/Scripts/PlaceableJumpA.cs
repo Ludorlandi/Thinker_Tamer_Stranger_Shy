@@ -32,10 +32,10 @@ public class PlaceableJumpA : MonoBehaviour
 
     // ── Sprites ──────────────────────────────────────────────────
     [Header("Sprites")]
-    [Tooltip("Sprite normale del placeable.")]
-    public Sprite saltoIdleSprite;
-    [Tooltip("Sprite mostrato all'attivazione dell'orb.")]
-    public Sprite saltoActivatedSprite;
+    [Tooltip("Frames animazione normale del placeable.")]
+    public Sprite[] saltoIdleSprites;
+    [Tooltip("Frames animazione all'attivazione dell'orb.")]
+    public Sprite[] saltoActivatedSprites;
 
     // ── Placement ────────────────────────────────────────────────
     [Header("Placement")]
@@ -106,6 +106,7 @@ public class PlaceableJumpA : MonoBehaviour
     private float pulsePhase = 0f;
     private float floatPhase = 0f;
     private SpriteRenderer mainSpriteRenderer;
+    private FloorTileAnimator tileAnimator;
     private Vector3 baseScale;
 
     // Orb state
@@ -125,8 +126,8 @@ public class PlaceableJumpA : MonoBehaviour
         mainSpriteRenderer = GetComponent<SpriteRenderer>();
         if (mainSpriteRenderer == null && spriteRenderers.Length > 0)
             mainSpriteRenderer = spriteRenderers[0];
-        if (mainSpriteRenderer != null && saltoIdleSprite != null)
-            mainSpriteRenderer.sprite = saltoIdleSprite;
+        tileAnimator = GetComponent<FloorTileAnimator>();
+        ApplySprites(saltoIdleSprites);
 
         if (player != null)
             playerController = player.GetComponent<PlayerController>();
@@ -135,6 +136,15 @@ public class PlaceableJumpA : MonoBehaviour
             SetUnlocked();
         else
             ApplyLockedVisual();
+    }
+
+    void ApplySprites(Sprite[] sprites)
+    {
+        if (sprites == null || sprites.Length == 0) return;
+        if (tileAnimator != null)
+            tileAnimator.sprites = sprites;
+        else if (mainSpriteRenderer != null)
+            mainSpriteRenderer.sprite = sprites[0];
     }
 
     void Update()
@@ -366,8 +376,7 @@ public class PlaceableJumpA : MonoBehaviour
 
     IEnumerator OrbActivateEffect()
     {
-        if (mainSpriteRenderer != null && saltoActivatedSprite != null)
-            mainSpriteRenderer.sprite = saltoActivatedSprite;
+        ApplySprites(saltoActivatedSprites);
 
         float duration = 0.25f;
         float elapsed = 0f;
@@ -380,8 +389,7 @@ public class PlaceableJumpA : MonoBehaviour
             yield return null;
         }
 
-        if (mainSpriteRenderer != null && saltoIdleSprite != null)
-            mainSpriteRenderer.sprite = saltoIdleSprite;
+        ApplySprites(saltoIdleSprites);
         // Torna al pulse normale (gestito in UpdateScale)
     }
 
