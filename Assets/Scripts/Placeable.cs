@@ -303,6 +303,21 @@ public class Placeable : MonoBehaviour
             currentLock2 = null;
     }
 
+    public void ForceUnanchor()
+    {
+        if (!isAnchored) return;
+        currentLock?.GetComponent<LockBlock>()?.SetFree();
+        currentLock2?.GetComponent<LockBlock>()?.SetFree();
+        currentLock = null;
+        currentLock2 = null;
+        isAnchored = false;
+        isSnapping = false;
+        transform.position = startPosition;
+        transform.localScale = Vector3.one;
+        transform.rotation = Quaternion.identity;
+        currentScaleFactor = 1f;
+    }
+
     public void SetUnlocked()
     {
         isUnlocked = true;

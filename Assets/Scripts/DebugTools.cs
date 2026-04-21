@@ -10,6 +10,9 @@ public class DebugTools : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.P))
             UnlockAllPlaceables();
+
+        if (Input.GetKeyDown(KeyCode.L))
+            UnanchorAllPlaceables();
     }
 
     void UnlockAllPlaceables()
@@ -29,5 +32,15 @@ public class DebugTools : MonoBehaviour
         }
 
         Debug.Log("[DebugTools] Tutti i Placeable sbloccati.");
+    }
+
+    void UnanchorAllPlaceables()
+    {
+        int count = 0;
+        foreach (var p in FindObjectsByType<Placeable>(FindObjectsSortMode.None))
+        {
+            if (p.IsAnchored) { p.ForceUnanchor(); count++; }
+        }
+        Debug.Log($"[DebugTools] {count} Placeable disancorati.");
     }
 }
