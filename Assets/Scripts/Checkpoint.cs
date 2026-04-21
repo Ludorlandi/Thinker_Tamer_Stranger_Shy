@@ -82,6 +82,7 @@ public class Checkpoint : MonoBehaviour
         activeCheckpoint = this;
         SetAppearance(true);
         PlayTouchEffect();
+        SoundManager.Instance?.PlaySFX(SoundID.CheckpointTouch);
     }
 
     // ── Appearance ─────────────────────────────────────────────────────────────

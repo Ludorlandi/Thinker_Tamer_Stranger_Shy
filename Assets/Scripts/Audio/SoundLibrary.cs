@@ -12,7 +12,9 @@ public enum SoundID
     UnlockScreenAppear,
     JumpPadBounce,
     OrbActivate,
-    PlaceableReturn
+    PlaceableReturn,
+    CheckpointTouch,
+    PlayerMove
 }
 
 public enum MusicID

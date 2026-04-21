@@ -26,6 +26,9 @@ public class SoundManager : MonoBehaviour
     private const int SFX_POOL_SIZE = 8;
     private AudioSource[] sfxPool;
 
+    // Sorgente dedicata al movimento — non si sovrappone mai
+    private AudioSource movementSource;
+
     // musicA = OtherAreas, musicB = MainRoom — sempre in sync, mai fermate
     private AudioSource musicA; // OtherAreas
     private AudioSource musicB; // MainRoom
@@ -40,6 +43,7 @@ public class SoundManager : MonoBehaviour
 
         BuildSFXPool();
         BuildMusicSources();
+        BuildMovementSource();
     }
 
     void Start()
@@ -63,6 +67,22 @@ public class SoundManager : MonoBehaviour
         source.volume = entry.volume * sfxVolume;
         source.pitch = Random.Range(entry.pitchMin, entry.pitchMax);
         source.Play();
+    }
+
+    // Riproduce il suono di movimento solo se il precedente è terminato
+    public void PlayMovementSFX()
+    {
+        if (movementSource.isPlaying) return;
+        if (library == null) return;
+        SoundEntry entry = library.GetEntry(SoundID.PlayerMove);
+        if (entry == null) return;
+        AudioClip clip = entry.GetRandomClip();
+        if (clip == null) return;
+
+        movementSource.clip = clip;
+        movementSource.volume = entry.volume * sfxVolume;
+        movementSource.pitch = Random.Range(entry.pitchMin, entry.pitchMax);
+        movementSource.Play();
     }
 
     // Cambia zona musicale — modifica solo i volumi, mai stop/play
@@ -91,6 +111,14 @@ public class SoundManager : MonoBehaviour
     }
 
     // ── Internals ───────────────────────────────────────────────
+
+    void BuildMovementSource()
+    {
+        var go = new GameObject("SFX_Movement");
+        go.transform.SetParent(transform);
+        movementSource = go.AddComponent<AudioSource>();
+        movementSource.playOnAwake = false;
+    }
 
     void BuildSFXPool()
     {

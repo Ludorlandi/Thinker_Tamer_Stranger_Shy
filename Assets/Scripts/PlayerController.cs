@@ -49,6 +49,9 @@ public class PlayerController : MonoBehaviour
         float horizontalInput = Input.GetAxisRaw("Horizontal");
         float speed = isGrounded ? moveSpeed : moveSpeed * airControlMultiplier;
         rb.linearVelocity = new Vector2(horizontalInput * speed, rb.linearVelocity.y);
+
+        if (horizontalInput != 0f && isGrounded)
+            SoundManager.Instance?.PlayMovementSFX();
     }
 
     void CheckGround()
