@@ -14,7 +14,8 @@ public enum SoundID
     OrbActivate,
     PlaceableReturn,
     CheckpointTouch,
-    PlayerMove
+    PlayerMove,
+    CollezionabilePickup
 }
 
 public enum MusicID

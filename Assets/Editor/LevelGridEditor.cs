@@ -309,25 +309,35 @@ public class LevelGridEditor : EditorWindow
 
     GameObject FindTileAt(Vector3 pos)
     {
-        float threshold = gridSize * 0.1f;
+        float threshold = gridSize * 0.45f; // mezzo tile di tolleranza
 
         if (parentGO != null)
         {
+            // Cerca in tutti i figli diretti (qualunque nome, anche prefab)
             foreach (Transform child in parentGO.transform)
             {
-                if (child.name == "Tile" && Vector3.Distance(child.position, pos) < threshold)
+                if (Vector3.Distance(child.position, pos) < threshold)
                     return child.gameObject;
             }
             return null;
         }
 
+        // Senza parent: cerca tra SpriteRenderer E Collider2D (copre tutti i tipi di tile)
+        GameObject best = null;
+        float bestDist  = float.MaxValue;
+
 #pragma warning disable CS0618
         foreach (var sr in Object.FindObjectsOfType<SpriteRenderer>())
-#pragma warning restore CS0618
         {
-            if (sr.gameObject.name == "Tile" && Vector3.Distance(sr.transform.position, pos) < threshold)
-                return sr.gameObject;
+            float d = Vector3.Distance(sr.transform.position, pos);
+            if (d < threshold && d < bestDist) { best = sr.gameObject; bestDist = d; }
         }
-        return null;
+        foreach (var col in Object.FindObjectsOfType<Collider2D>())
+        {
+            float d = Vector3.Distance(col.transform.position, pos);
+            if (d < threshold && d < bestDist) { best = col.gameObject; bestDist = d; }
+        }
+#pragma warning restore CS0618
+        return best;
     }
 }
