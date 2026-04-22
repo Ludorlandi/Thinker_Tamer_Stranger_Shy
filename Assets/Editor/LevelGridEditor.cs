@@ -148,9 +148,7 @@ public class LevelGridEditor : EditorWindow
         EditorGUILayout.Space(8);
 
         EditorGUILayout.HelpBox(
-            eraseMode
-                ? "Click sinistro o trascina: cancella tile"
-                : "Click sinistro o trascina: piazza tile\nClick destro: cancella tile\nCtrl+Z: annulla",
+            "Click/trascina sx: piazza o cancella (segue toggle)\nCtrl+Click/trascina sx: cancella sempre\nCtrl+Z: annulla",
             MessageType.Info);
     }
 
@@ -159,9 +157,11 @@ public class LevelGridEditor : EditorWindow
     {
         if (!paintMode) return;
 
-        HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive));
-
+        int controlID = GUIUtility.GetControlID(FocusType.Passive);
         Event e = Event.current;
+
+        if (e.type == EventType.Layout)
+            HandleUtility.AddDefaultControl(controlID);
 
         // World position sotto il cursore
         Ray ray = HandleUtility.GUIPointToWorldRay(e.mousePosition);
@@ -173,25 +173,18 @@ public class LevelGridEditor : EditorWindow
         Vector3 snapped = Snap(mouseWorld);
 
         DrawGrid(sv);
-        DrawPreview(snapped);
+        DrawPreview(snapped, e.control);
 
-        bool isLeftDown  = (e.type == EventType.MouseDown || e.type == EventType.MouseDrag) && e.button == 0;
-        bool isRightDown = e.type == EventType.MouseDown && e.button == 1;
-
-        if (isLeftDown)
+        bool isDown = e.type == EventType.MouseDown || e.type == EventType.MouseDrag;
+        if (isDown && e.button == 0)
         {
             if (snapped != lastSnapped)
             {
                 lastSnapped = snapped;
-                if (eraseMode) EraseTile(snapped);
-                else           PlaceTile(snapped);
+                bool shouldErase = eraseMode || e.control;
+                if (shouldErase) EraseTile(snapped);
+                else             PlaceTile(snapped);
             }
-            e.Use();
-        }
-        else if (isRightDown)
-        {
-            EraseTile(snapped);
-            lastSnapped = snapped;
             e.Use();
         }
         else if (e.type == EventType.MouseUp)
@@ -224,18 +217,24 @@ public class LevelGridEditor : EditorWindow
             Handles.DrawLine(new Vector3(x0, y, 0f), new Vector3(x1, y, 0f));
     }
 
-    void DrawPreview(Vector3 pos)
+    void DrawPreview(Vector3 pos, bool ctrlHeld = false)
     {
         float h = gridSize * 0.5f;
         Rect r  = new Rect(pos.x - h, pos.y - h, gridSize, gridSize);
 
-        Color fill    = eraseMode ? new Color(1f, 0.2f, 0.2f, 0.35f)
-                                  : new Color(tileColor.r, tileColor.g, tileColor.b, 0.45f);
-        Color outline = eraseMode ? new Color(1f, 0.1f, 0.1f, 1f) : Color.white;
-
-        // Per collider invisibile usa un fill grigio
-        if (!eraseMode && (tileType == TileType.SoloCollider))
-            fill = new Color(0.5f, 0.5f, 0.5f, 0.4f);
+        Color fill, outline;
+        if (eraseMode || ctrlHeld)
+        {
+            fill    = new Color(1f, 0.2f, 0.2f, 0.35f);
+            outline = new Color(1f, 0.1f, 0.1f, 1f);
+        }
+        else
+        {
+            fill    = tileType == TileType.SoloCollider
+                          ? new Color(0.5f, 0.5f, 0.5f, 0.4f)
+                          : new Color(tileColor.r, tileColor.g, tileColor.b, 0.45f);
+            outline = Color.white;
+        }
 
         Handles.DrawSolidRectangleWithOutline(r, fill, outline);
     }
@@ -252,7 +251,8 @@ public class LevelGridEditor : EditorWindow
             if (tilePrefab == null) return;
             go = (GameObject)PrefabUtility.InstantiatePrefab(tilePrefab);
             Undo.RegisterCreatedObjectUndo(go, "Place Tile");
-            go.transform.position = pos;
+            Vector3 prefabOffset = go.transform.localPosition;
+            go.transform.position = pos + prefabOffset;
         }
         else
         {
