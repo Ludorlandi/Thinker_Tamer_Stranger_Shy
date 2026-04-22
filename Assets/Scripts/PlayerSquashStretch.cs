@@ -2,6 +2,14 @@ using UnityEngine;
 
 public class PlayerSquashStretch : MonoBehaviour
 {
+    [Header("References")]
+    [Tooltip("Transform del corpo (PGbody). Riceve rolling, squash/stretch e tilt.")]
+    public Transform bodyTransform;
+
+    [Header("Rolling")]
+    [Tooltip("Raggio del corpo in unità Unity. Usato per calcolare la rotazione di rolling.")]
+    public float bodyRadius = 0.5f;
+
     [Header("Squash & Stretch")]
     [Tooltip("Scala target durante lo schiacciamento (salto/atterraggio)")]
     public Vector2 squashScale = new Vector2(1.3f, 0.7f);
@@ -32,20 +40,19 @@ public class PlayerSquashStretch : MonoBehaviour
     private PlayerController controller;
 
     private Vector2 currentScale = Vector2.one;
-    private Vector2 targetScale = Vector2.one;
-    private float currentTilt = 0f;
+    private Vector2 targetScale  = Vector2.one;
+    private float   currentTilt  = 0f;
+    private float   rollAngle    = 0f;
 
     private bool wasGrounded = false;
-    private bool jumpSquashDone = false;
-    private float jumpTimer = 0f;
+    private float jumpTimer  = 0f;
 
-    // Fasi del salto
     private enum JumpPhase { None, Squash, Stretch }
     private JumpPhase jumpPhase = JumpPhase.None;
 
     void Awake()
     {
-        rb = GetComponent<Rigidbody2D>();
+        rb         = GetComponent<Rigidbody2D>();
         controller = GetComponent<PlayerController>();
     }
 
@@ -55,10 +62,13 @@ public class PlayerSquashStretch : MonoBehaviour
         float vy = rb.linearVelocity.y;
         float vx = rb.linearVelocity.x;
 
+        // --- Rolling (distanza percorsa → angolo) ---
+        // Muoversi a destra = rotazione oraria = Z negativo in Unity
+        rollAngle -= (vx * Time.deltaTime / bodyRadius) * Mathf.Rad2Deg;
+
         // --- Gestione fasi di salto ---
         if (!wasGrounded && isGrounded)
         {
-            // Atterraggio
             float landIntensity = Mathf.Clamp01(Mathf.Abs(vy) / 15f);
             targetScale = Vector2.Lerp(Vector2.one, squashScale, 0.5f + landIntensity * 0.5f);
             jumpPhase = JumpPhase.None;
@@ -66,42 +76,32 @@ public class PlayerSquashStretch : MonoBehaviour
         }
         else if (wasGrounded && !isGrounded && vy > 0f)
         {
-            // Inizio salto: prima schiaccia, poi allunga
             jumpPhase = JumpPhase.Squash;
             jumpTimer = 0f;
         }
 
-        // Timer per transizione squash → stretch durante il salto
         if (jumpPhase == JumpPhase.Squash)
         {
-            jumpTimer += Time.deltaTime;
+            jumpTimer  += Time.deltaTime;
             targetScale = squashScale;
-            if (jumpTimer > 0.06f)
-            {
-                jumpPhase = JumpPhase.Stretch;
-                jumpTimer = 0f;
-            }
+            if (jumpTimer > 0.06f) { jumpPhase = JumpPhase.Stretch; jumpTimer = 0f; }
         }
         else if (jumpPhase == JumpPhase.Stretch)
         {
-            jumpTimer += Time.deltaTime;
+            jumpTimer  += Time.deltaTime;
             targetScale = stretchScale;
-            if (jumpTimer > 0.12f)
-                jumpPhase = JumpPhase.None;
+            if (jumpTimer > 0.12f) jumpPhase = JumpPhase.None;
         }
         else if (!isGrounded && vy < -fallStretchThreshold)
         {
-            // Caduta veloce: stretch proporzionale alla velocità
             float t = Mathf.Clamp01((Mathf.Abs(vy) - fallStretchThreshold) / 10f);
             targetScale = Vector2.Lerp(Vector2.one, fallStretchScale, t);
         }
         else if (jumpPhase == JumpPhase.None)
         {
-            // Torna a normale
             targetScale = Vector2.one;
         }
 
-        // Lerp della scala verso il target
         float lerpSpeed = (targetScale != Vector2.one) ? snapSpeed : returnSpeed;
         currentScale = Vector2.Lerp(currentScale, targetScale, Time.deltaTime * lerpSpeed);
 
@@ -111,17 +111,18 @@ public class PlayerSquashStretch : MonoBehaviour
             targetTilt = -Mathf.Sign(vx) * runTiltAngle;
         currentTilt = Mathf.Lerp(currentTilt, targetTilt, Time.deltaTime * tiltSpeed);
 
-        // Applica scala e rotazione al transform
-        transform.localScale = new Vector3(currentScale.x, currentScale.y, 1f);
-        transform.rotation = Quaternion.Euler(0f, 0f, currentTilt);
+        // --- Applica tutto solo al body ---
+        if (bodyTransform != null)
+        {
+            bodyTransform.localScale    = new Vector3(currentScale.x, currentScale.y, 1f);
+            bodyTransform.localRotation = Quaternion.Euler(0f, 0f, rollAngle + currentTilt);
+        }
 
         wasGrounded = isGrounded;
     }
 
     bool IsGrounded()
     {
-        // Legge lo stato di grounded tramite reflection sul PlayerController
-        // (coyoteCounter > 0 significa a terra o appena lasciato il suolo)
         var field = typeof(PlayerController).GetField("isGrounded",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         if (field != null)
