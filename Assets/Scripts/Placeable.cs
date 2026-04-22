@@ -4,6 +4,7 @@ public class Placeable : MonoBehaviour
 {
     public static event System.Action OnAnyDragStart;
     public static event System.Action OnAnyDragEnd;
+    public event System.Action OnUnlocked;
 
     [Header("References")]
     public GameObject player;
@@ -323,6 +324,7 @@ public class Placeable : MonoBehaviour
         isUnlocked = true;
         foreach (var sr in spriteRenderers)
             sr.color = Color.white;
+        OnUnlocked?.Invoke();
     }
 
     void ApplyLockedVisual()

@@ -14,7 +14,12 @@ public class GlitchContainer : MonoBehaviour
 
         Placeable.OnAnyDragStart += OnDragStart;
         Placeable.OnAnyDragEnd   += OnDragEnd;
-        gameObject.SetActive(false);
+    }
+
+    void Start()
+    {
+        if (!Application.isPlaying) return;
+        SetChildrenActive(false); // nasconde i figli ma GlitchContainer resta sempre attivo
     }
 
     void OnDestroy()
@@ -23,6 +28,12 @@ public class GlitchContainer : MonoBehaviour
         Placeable.OnAnyDragEnd   -= OnDragEnd;
     }
 
-    void OnDragStart() => gameObject.SetActive(true);
-    void OnDragEnd()   => gameObject.SetActive(false);
+    void OnDragStart() => SetChildrenActive(true);
+    void OnDragEnd()   => SetChildrenActive(false);
+
+    void SetChildrenActive(bool active)
+    {
+        foreach (Transform child in transform)
+            child.gameObject.SetActive(active);
+    }
 }
