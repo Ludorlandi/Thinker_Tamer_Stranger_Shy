@@ -26,7 +26,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2000001}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 1
@@ -93,6 +93,10 @@ MonoBehaviour:
   - {fileID: -1001002003004005009, guid: dc43675e32f45b041bf114557d5d477d, type: 3}
   - {fileID: -1001002003004005010, guid: dc43675e32f45b041bf114557d5d477d, type: 3}
   - {fileID: -1001002003004005011, guid: dc43675e32f45b041bf114557d5d477d, type: 3}
+  trampolinoSheet: {fileID: 0}
+  trampolinoColumns: 6
+  trampolinoRows: 1
+  trampolinoFps: 12
   overlapCheckSize: {x: 1, y: 1}
   overlapCheckMask:
     serializedVersion: 2
@@ -190,8 +194,8 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 1
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: d1e2f3a4b5c6d7e8f9a0b1c2d3e4f507, type: 3}
-  m_Color: {r: 1, g: 0.3, b: 0.7, a: 1}
+  m_Sprite: {fileID: -1001002003004005006, guid: 4f30364167220ae4bbde011652e48b2f, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
