@@ -16,15 +16,60 @@ public class JumpPad : MonoBehaviour
     [Tooltip("Tempo minimo tra un lancio e il successivo — evita re-trigger immediato.")]
     public float launchCooldown = 0.4f;
 
-    [Tooltip("Transform del figlio visivo su cui applicare l'effetto squash.")]
+    [Tooltip("Transform del figlio visivo su cui applicare l'effetto squash e l'animazione.")]
     public Transform visualTransform;
+
+    [Header("Trampolino Spritesheet")]
+    [Tooltip("Texture dello spritesheet (Read/Write abilitato).")]
+    public Texture2D trampolinoSheet;
+    [Tooltip("Numero di colonne dello spritesheet.")]
+    public int trampolinoColumns = 6;
+    [Tooltip("Numero di righe dello spritesheet.")]
+    public int trampolinoRows    = 1;
+    [Tooltip("Frame al secondo dell'animazione di attivazione.")]
+    public float trampolinoFps   = 12f;
 
     private Placeable placeable;
     private float lastLaunchTime = -10f;
+    private Sprite[] frames;
+    private SpriteRenderer visualSR;
+    private Coroutine animCoroutine;
 
     void Start()
     {
         placeable = GetComponent<Placeable>();
+
+        if (visualTransform != null)
+            visualSR = visualTransform.GetComponent<SpriteRenderer>();
+
+        BuildFrames();
+        SetIdleSprite();
+    }
+
+    void BuildFrames()
+    {
+        if (trampolinoSheet == null) return;
+        int total  = trampolinoColumns * trampolinoRows;
+        int frameW = trampolinoSheet.width  / trampolinoColumns;
+        int frameH = trampolinoSheet.height / trampolinoRows;
+        frames = new Sprite[total];
+        for (int i = 0; i < total; i++)
+        {
+            int col = i % trampolinoColumns;
+            int row = trampolinoRows - 1 - (i / trampolinoColumns);
+            frames[i] = Sprite.Create(
+                trampolinoSheet,
+                new Rect(col * frameW, row * frameH, frameW, frameH),
+                new Vector2(0.5f, 0.5f),
+                frameW
+            );
+        }
+    }
+
+    void SetIdleSprite()
+    {
+        if (visualSR == null || frames == null || frames.Length == 0) return;
+        visualSR.sprite = frames[0];
     }
 
     void OnTriggerEnter2D(Collider2D other)
@@ -42,10 +87,16 @@ public class JumpPad : MonoBehaviour
 
         pc.ForceJump(pc.jumpForce * jumpMultiplier);
         lastLaunchTime = Time.time;
-        SoundManager.Instance?.PlaySFX(SoundID.JumpPadBounce);
+        SoundManager.Instance?.PlaySFX(SoundID.TrampolinoActivate);
 
         if (visualTransform != null)
             StartCoroutine(SquashEffect());
+
+        if (frames != null && frames.Length > 0)
+        {
+            if (animCoroutine != null) StopCoroutine(animCoroutine);
+            animCoroutine = StartCoroutine(PlaySheetAnim());
+        }
     }
 
     IEnumerator SquashEffect()
@@ -62,5 +113,27 @@ public class JumpPad : MonoBehaviour
             yield return null;
         }
         visualTransform.localScale = Vector3.one;
+    }
+
+    IEnumerator PlaySheetAnim()
+    {
+        float frameDuration = trampolinoFps > 0f ? 1f / trampolinoFps : 0.083f;
+
+        // Avanti: 0 → N-1
+        for (int i = 0; i < frames.Length; i++)
+        {
+            if (visualSR != null) visualSR.sprite = frames[i];
+            yield return new WaitForSeconds(frameDuration);
+        }
+
+        // Indietro: N-2 → 0
+        for (int i = frames.Length - 2; i >= 0; i--)
+        {
+            if (visualSR != null) visualSR.sprite = frames[i];
+            yield return new WaitForSeconds(frameDuration);
+        }
+
+        SetIdleSprite();
+        animCoroutine = null;
     }
 }

@@ -15,7 +15,8 @@ public enum SoundID
     PlaceableReturn,
     CheckpointTouch,
     PlayerMove,
-    CollezionabilePickup
+    CollezionabilePickup,
+    TrampolinoActivate
 }
 
 public enum MusicID

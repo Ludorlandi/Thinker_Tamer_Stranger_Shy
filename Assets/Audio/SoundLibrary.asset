@@ -80,5 +80,17 @@ MonoBehaviour:
     volume: 1
     pitchMin: 0.95
     pitchMax: 1.05
+  - id: 13
+    variants:
+    - {fileID: 8300000, guid: e90a92b63efc2b141a8282eea00f6a4c, type: 3}
+    volume: 1
+    pitchMin: 0.95
+    pitchMax: 1.05
+  - id: 14
+    variants:
+    - {fileID: 8300000, guid: be5bf3d63a80d2e4c88b02d3812f5bd7, type: 3}
+    volume: 1
+    pitchMin: 0.95
+    pitchMax: 1.05
   mainRoomMusic: {fileID: 8300000, guid: 249f41eb3de7d9148adaf47d96137ea7, type: 3}
   otherAreasMusic: {fileID: 8300000, guid: 3891420107c82764aa938e0f72277741, type: 3}

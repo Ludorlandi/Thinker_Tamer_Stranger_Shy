@@ -30,12 +30,23 @@ public class PlaceableJumpA : MonoBehaviour
     [Header("References")]
     public GameObject player;
 
-    // ── Sprites ──────────────────────────────────────────────────
-    [Header("Sprites")]
-    [Tooltip("Frames animazione normale del placeable.")]
+    // ── Sprites (modalità Orb) ────────────────────────────────────
+    [Header("Sprites (modalità Orb — lasciare vuoti se si usa il Trampolino)")]
+    [Tooltip("Frames animazione normale dell'orb.")]
     public Sprite[] saltoIdleSprites;
     [Tooltip("Frames animazione all'attivazione dell'orb.")]
     public Sprite[] saltoActivatedSprites;
+
+    // ── Trampolino Spritesheet (modalità Trampolino) ──────────────
+    [Header("Trampolino Spritesheet (lasciare vuoto se si usa l'Orb)")]
+    [Tooltip("Texture dello spritesheet del trampolino (Read/Write abilitato). Se assegnata, attiva la modalità trampolino.")]
+    public Texture2D trampolinoSheet;
+    [Tooltip("Numero di colonne dello spritesheet.")]
+    public int trampolinoColumns = 6;
+    [Tooltip("Numero di righe dello spritesheet.")]
+    public int trampolinoRows    = 1;
+    [Tooltip("Frame al secondo dell'animazione di attivazione.")]
+    public float trampolinoFps  = 12f;
 
     // ── Placement ────────────────────────────────────────────────
     [Header("Placement")]
@@ -109,6 +120,10 @@ public class PlaceableJumpA : MonoBehaviour
     private FloorTileAnimator tileAnimator;
     private Vector3 baseScale;
 
+    // Trampolino animation state
+    private Sprite[]  trampolinoFrames;
+    private Coroutine trampolinoAnim;
+
     // Orb state
     private bool playerInOrb = false;
     private bool orbUsed = false;
@@ -127,7 +142,15 @@ public class PlaceableJumpA : MonoBehaviour
         if (mainSpriteRenderer == null && spriteRenderers.Length > 0)
             mainSpriteRenderer = spriteRenderers[0];
         tileAnimator = GetComponent<FloorTileAnimator>();
-        ApplySprites(saltoIdleSprites);
+        if (trampolinoSheet != null)
+        {
+            BuildTrampolinoFrames();
+            SetIdleSprite();
+        }
+        else
+        {
+            ApplySprites(saltoIdleSprites);
+        }
 
         if (player != null)
             playerController = player.GetComponent<PlayerController>();
@@ -138,6 +161,26 @@ public class PlaceableJumpA : MonoBehaviour
             ApplyLockedVisual();
     }
 
+    void BuildTrampolinoFrames()
+    {
+        if (trampolinoSheet == null) return;
+        int total  = trampolinoColumns * trampolinoRows;
+        int frameW = trampolinoSheet.width  / trampolinoColumns;
+        int frameH = trampolinoSheet.height / trampolinoRows;
+        trampolinoFrames = new Sprite[total];
+        for (int i = 0; i < total; i++)
+        {
+            int col = i % trampolinoColumns;
+            int row = trampolinoRows - 1 - (i / trampolinoColumns);
+            trampolinoFrames[i] = Sprite.Create(
+                trampolinoSheet,
+                new Rect(col * frameW, row * frameH, frameW, frameH),
+                new Vector2(0.5f, 0.5f),
+                frameW
+            );
+        }
+    }
+
     void ApplySprites(Sprite[] sprites)
     {
         if (sprites == null || sprites.Length == 0) return;
@@ -145,6 +188,13 @@ public class PlaceableJumpA : MonoBehaviour
             tileAnimator.sprites = sprites;
         else if (mainSpriteRenderer != null)
             mainSpriteRenderer.sprite = sprites[0];
+    }
+
+    void SetIdleSprite()
+    {
+        if (trampolinoFrames == null || trampolinoFrames.Length == 0) return;
+        if (mainSpriteRenderer != null)
+            mainSpriteRenderer.sprite = trampolinoFrames[0];
     }
 
     void Update()
@@ -316,7 +366,7 @@ public class PlaceableJumpA : MonoBehaviour
         StartCoroutine(OrbActivateEffect());
     }
 
-    // ── Trigger Orb ───────────────────────────────────────────────
+    // ── Trigger ───────────────────────────────────────────────────
 
     void OnTriggerEnter2D(Collider2D other)
     {
@@ -324,6 +374,14 @@ public class PlaceableJumpA : MonoBehaviour
         if (!other.CompareTag("Player")) return;
         playerInOrb = true;
         orbUsed = false;
+
+        // Modalità trampolino: anima e suona al tocco
+        if (trampolinoSheet != null)
+        {
+            SoundManager.Instance?.PlaySFX(SoundID.TrampolinoActivate);
+            if (trampolinoAnim != null) StopCoroutine(trampolinoAnim);
+            trampolinoAnim = StartCoroutine(PlayTrampolinoAnim());
+        }
     }
 
     void OnTriggerExit2D(Collider2D other)
@@ -380,18 +438,33 @@ public class PlaceableJumpA : MonoBehaviour
         ApplySprites(saltoActivatedSprites);
 
         float duration = 0.25f;
-        float elapsed = 0f;
+        float elapsed  = 0f;
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
-            float t = elapsed / duration;
+            float t     = elapsed / duration;
             float burst = 1f + Mathf.Sin(t * Mathf.PI) * 0.35f;
             transform.localScale = baseScale * burst;
             yield return null;
         }
 
         ApplySprites(saltoIdleSprites);
-        // Torna al pulse normale (gestito in UpdateScale)
+    }
+
+    IEnumerator PlayTrampolinoAnim()
+    {
+        if (trampolinoFrames == null || trampolinoFrames.Length == 0) yield break;
+
+        float frameDuration = trampolinoFps > 0f ? 1f / trampolinoFps : 0.083f;
+        foreach (var frame in trampolinoFrames)
+        {
+            if (mainSpriteRenderer != null)
+                mainSpriteRenderer.sprite = frame;
+            yield return new WaitForSeconds(frameDuration);
+        }
+
+        SetIdleSprite();
+        trampolinoAnim = null;
     }
 
     // ── Utility ───────────────────────────────────────────────────
