@@ -168,6 +168,7 @@ GameObject:
   - component: {fileID: 7700000000000000004}
   - component: {fileID: 7700000000000004001}
   - component: {fileID: 7700000000000004002}
+  - component: {fileID: 7700000000000004003}
   m_Layer: 8
   m_Name: Placeable_Jump2
   m_TagString: Untagged
@@ -673,3 +674,23 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 911194868468781653, guid: af41bb8270109454eb8bc33b504914d3, type: 3}
   m_PrefabInstance: {fileID: 5331810163532590708}
   m_PrefabAsset: {fileID: 0}
+
+--- !u!114 &7700000000000004003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3325939210042127635}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 680bc7bbe1cc9f240afda92c672a7a7f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::JumpPad
+  jumpMultiplier: 1.5
+  launchCooldown: 0.4
+  visualTransform: {fileID: 0}
+  trampolinoSheet: {fileID: 0}
+  trampolinoColumns: 6
+  trampolinoRows: 1
+  trampolinoFps: 48
