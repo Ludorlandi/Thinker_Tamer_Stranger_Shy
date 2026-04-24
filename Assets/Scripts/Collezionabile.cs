@@ -1,7 +1,12 @@
 using UnityEngine;
 
+public enum CollezionabileType { Thinker, Shy, Stranger, Tamer }
+
 public class Collezionabile : MonoBehaviour
 {
+    [Header("Tipo")]
+    public CollezionabileType tipo;
+
     [Header("Oscillazione")]
     public float oscillateAmplitude = 0.18f;
     [Range(0.5f, 4f)]
@@ -32,7 +37,7 @@ public class Collezionabile : MonoBehaviour
     void Collect()
     {
         SoundManager.Instance?.PlaySFX(SoundID.CollezionabilePickup);
-        CollezionabileManager.Instance?.OnCollected();
+        CollezionabileManager.Instance?.OnCollected(tipo);
         Destroy(gameObject);
     }
 }
