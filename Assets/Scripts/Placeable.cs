@@ -74,6 +74,8 @@ public class Placeable : MonoBehaviour
     private Vector3 visualCenterOffset;
     private bool isHovered = false;
     private float currentScaleFactor = 1f;
+    private GameObject[] glitchObjects; // tutti i figli il cui nome inizia con "Glitch_"
+    private Collider2D[] ownNonTriggerColliders; // cache per OverlapPoint manuale
 
     void Start()
     {
@@ -92,6 +94,19 @@ public class Placeable : MonoBehaviour
         }
         visualCenterOffset = first ? Vector3.zero : bounds.center - transform.position;
 
+        // Raccogli tutti i figli Glitch_ (inclusi inattivi, nomi come Glitch_BottomPlaceable ecc.)
+        var glitchList = new System.Collections.Generic.List<GameObject>();
+        foreach (Transform t in GetComponentsInChildren<Transform>(true))
+            if (t != transform && t.name.StartsWith("Glitch_"))
+                glitchList.Add(t.gameObject);
+        glitchObjects = glitchList.ToArray();
+
+        // Cache collider non-trigger per il rilevamento manuale del mouse
+        var cols = new System.Collections.Generic.List<Collider2D>();
+        foreach (var c in GetComponentsInChildren<Collider2D>())
+            if (!c.isTrigger) cols.Add(c);
+        ownNonTriggerColliders = cols.ToArray();
+
         // Controlla se già sbloccato (es. stanza caricata dopo aver già raccolto l'item)
         if (PlaceableUnlockManager.Instance != null && PlaceableUnlockManager.Instance.IsUnlocked(placeableType))
             SetUnlocked();
@@ -99,8 +114,26 @@ public class Placeable : MonoBehaviour
             ApplyLockedVisual();
     }
 
+    void SetGlitchActive(bool active)
+    {
+        if (glitchObjects == null) return;
+        foreach (var go in glitchObjects)
+            if (go != null) go.SetActive(active);
+    }
+
+    bool IsMouseOver()
+    {
+        Vector2 mp = GetMouseWorldPos();
+        if (ownNonTriggerColliders == null) return false;
+        foreach (var c in ownNonTriggerColliders)
+            if (c != null && c.OverlapPoint(mp)) return true;
+        return false;
+    }
+
     void Update()
     {
+        HandleMouseInput();
+
         if (isSnapping && !isDragging)
         {
             bool dualKey = keyTransform2 != null;
@@ -150,6 +183,7 @@ public class Placeable : MonoBehaviour
                 {
                     isSnapping = false;
                     isAnchored = true;
+                    SetGlitchActive(false);
                 }
             }
         }
@@ -178,56 +212,60 @@ public class Placeable : MonoBehaviour
         }
     }
 
-    void OnMouseDown()
+    void HandleMouseInput()
     {
-        if (!isUnlocked)
+        bool mouseOver = IsMouseOver();
+
+        // Hover: attivo solo se sbloccato, non ancorato, non in drag/snap
+        isHovered = mouseOver && isUnlocked && !isAnchored && !isDragging && !isSnapping;
+
+        // Click sinistro: inizia drag
+        if (mouseOver && Input.GetMouseButtonDown(0) && !isDragging)
         {
-            SoundManager.Instance?.PlaySFX(SoundID.PlaceableLockedClick);
-            return;
+            if (!isUnlocked)
+            {
+                SoundManager.Instance?.PlaySFX(SoundID.PlaceableLockedClick);
+            }
+            else
+            {
+                if (isAnchored)
+                {
+                    currentLock?.GetComponent<LockBlock>()?.SetFree();
+                    currentLock2?.GetComponent<LockBlock>()?.SetFree();
+                    currentLock = null;
+                    currentLock2 = null;
+                    isAnchored = false;
+                    SetGlitchActive(true);
+                }
+
+                isDragging = true;
+                isSnapping = false;
+                transform.rotation = Quaternion.identity;
+                offset = transform.position - GetMouseWorldPos();
+                SoundManager.Instance?.PlaySFX(SoundID.PlaceableDragStart);
+                OnAnyDragStart?.Invoke();
+
+                if (player != null)
+                    player.SetActive(false);
+            }
         }
 
-        // Se è ancorato, liberalo e permettine il riprelievo
-        if (isAnchored)
+        // Mentre trascino
+        if (isDragging)
         {
-            currentLock?.GetComponent<LockBlock>()?.SetFree();
-            currentLock2?.GetComponent<LockBlock>()?.SetFree();
-            currentLock = null;
-            currentLock2 = null;
-            isAnchored = false;
+            if (Input.GetMouseButton(0))
+            {
+                transform.position = GetMouseWorldPos() + offset;
+            }
+
+            if (Input.GetMouseButtonUp(0))
+            {
+                EndDrag();
+            }
         }
 
-        isDragging = true;
-        isSnapping = false;
-        transform.rotation = Quaternion.identity;
-        offset = transform.position - GetMouseWorldPos();
-        SoundManager.Instance?.PlaySFX(SoundID.PlaceableDragStart);
-        OnAnyDragStart?.Invoke();
-
-        if (player != null)
-            player.SetActive(false);
-    }
-
-    void OnMouseDrag()
-    {
-        if (!isDragging) return;
-        transform.position = GetMouseWorldPos() + offset;
-    }
-
-    void OnMouseEnter()
-    {
-        if (isUnlocked && !isAnchored)
-            isHovered = true;
-    }
-
-    void OnMouseExit()
-    {
-        isHovered = false;
-    }
-
-    void OnMouseOver()
-    {
-        // Tasto destro su un Placeable ancorato → torna alla posizione di partenza
-        if (isAnchored && Input.GetMouseButtonDown(1))
+        // Click destro su Placeable ancorato → torna alla posizione di partenza
+        if (mouseOver && Input.GetMouseButtonDown(1) && isAnchored)
         {
             currentLock?.GetComponent<LockBlock>()?.SetFree();
             currentLock2?.GetComponent<LockBlock>()?.SetFree();
@@ -238,11 +276,20 @@ public class Placeable : MonoBehaviour
             transform.localScale = Vector3.one;
             transform.rotation = Quaternion.identity;
             currentScaleFactor = 1f;
+            SetGlitchActive(true);
             SoundManager.Instance?.PlaySFX(SoundID.PlaceableReturn);
+
+            if (player != null)
+            {
+                player.SetActive(true);
+                player.transform.position = Checkpoint.GetActivePosition();
+                Rigidbody2D rb = player.GetComponent<Rigidbody2D>();
+                if (rb != null) rb.linearVelocity = Vector2.zero;
+            }
         }
     }
 
-    void OnMouseUp()
+    void EndDrag()
     {
         isDragging = false;
         OnAnyDragEnd?.Invoke();
@@ -317,6 +364,7 @@ public class Placeable : MonoBehaviour
         transform.localScale = Vector3.one;
         transform.rotation = Quaternion.identity;
         currentScaleFactor = 1f;
+        SetGlitchActive(true);
     }
 
     public void SetUnlocked()

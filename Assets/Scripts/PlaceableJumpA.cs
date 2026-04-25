@@ -106,6 +106,7 @@ public class PlaceableJumpA : MonoBehaviour
     private bool isPlaced = false;
 
     private Vector3 startPosition;
+    private Vector3 originalPosition; // posizione spawn, mai modificata
     private Vector3 dragOffset;
     private Camera cam;
     private SpriteRenderer[] spriteRenderers;
@@ -136,6 +137,7 @@ public class PlaceableJumpA : MonoBehaviour
         cam = Camera.main;
         col = GetComponent<Collider2D>();
         startPosition = transform.position;
+        originalPosition = transform.position;
         baseScale = transform.localScale;
         spriteRenderers = GetComponentsInChildren<SpriteRenderer>();
         mainSpriteRenderer = GetComponent<SpriteRenderer>();
@@ -255,15 +257,24 @@ public class PlaceableJumpA : MonoBehaviour
             }
         }
 
-        // Click destro su orb piazzato: riporta alla startPosition
+        // Click destro su orb piazzato: riporta alla posizione originale
         if (mouseOver && Input.GetMouseButtonDown(1) && isPlaced && !Input.GetMouseButtonUp(0))
         {
             isPlaced = false;
-            transform.position = startPosition;
+            startPosition = originalPosition; // ripristina per l'animazione bob
+            transform.position = originalPosition;
             transform.localScale = baseScale;
             transform.rotation = Quaternion.identity;
             currentScaleFactor = 1f;
             SoundManager.Instance?.PlaySFX(SoundID.PlaceableReturn);
+
+            if (player != null)
+            {
+                player.SetActive(true);
+                player.transform.position = Checkpoint.GetActivePosition();
+                Rigidbody2D rb = player.GetComponent<Rigidbody2D>();
+                if (rb != null) rb.linearVelocity = Vector2.zero;
+            }
         }
     }
 

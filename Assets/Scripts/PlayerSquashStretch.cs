@@ -36,6 +36,15 @@ public class PlayerSquashStretch : MonoBehaviour
     [Tooltip("Velocità con cui l'inclinazione segue il movimento")]
     public float tiltSpeed = 10f;
 
+    [Header("Idle Breath")]
+    [Tooltip("Ampiezza della deformazione respiratoria (Y). 0.03 = sottile, 0.07 = evidente.")]
+    [Range(0f, 0.1f)]
+    public float breathAmplitude = 0.035f;
+
+    [Tooltip("Velocità del respiro in cicli al secondo.")]
+    [Range(0.2f, 2f)]
+    public float breathFrequency = 0.75f;
+
     private Rigidbody2D rb;
     private PlayerController controller;
 
@@ -49,6 +58,9 @@ public class PlayerSquashStretch : MonoBehaviour
 
     private enum JumpPhase { None, Squash, Stretch }
     private JumpPhase jumpPhase = JumpPhase.None;
+
+    private float breathPhase  = 0f;
+    private float breathFactor = 0f;
 
     void Awake()
     {
@@ -111,10 +123,19 @@ public class PlayerSquashStretch : MonoBehaviour
             targetTilt = -Mathf.Sign(vx) * runTiltAngle;
         currentTilt = Mathf.Lerp(currentTilt, targetTilt, Time.deltaTime * tiltSpeed);
 
+        // --- Idle breath: attivo solo quando fermo a terra senza fasi di salto ---
+        breathPhase += Time.deltaTime * breathFrequency * Mathf.PI * 2f;
+        bool isIdle = isGrounded && jumpPhase == JumpPhase.None && Mathf.Abs(vx) < 0.5f;
+        breathFactor = Mathf.Lerp(breathFactor, isIdle ? 1f : 0f, Time.deltaTime * 5f);
+        float bAmp      = breathAmplitude * breathFactor;
+        float sine      = Mathf.Sin(breathPhase);
+        float breathX   = 1f - sine * bAmp * 0.5f; // leggera compressione X compensa Y
+        float breathY   = 1f + sine * bAmp;
+
         // --- Applica tutto solo al body ---
         if (bodyTransform != null)
         {
-            bodyTransform.localScale    = new Vector3(currentScale.x, currentScale.y, 1f);
+            bodyTransform.localScale    = new Vector3(currentScale.x * breathX, currentScale.y * breathY, 1f);
             bodyTransform.localRotation = Quaternion.Euler(0f, 0f, rollAngle + currentTilt);
         }
 
