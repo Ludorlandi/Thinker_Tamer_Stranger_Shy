@@ -37,6 +37,9 @@ public class TheSignFilesUI : MonoBehaviour
     [Tooltip("Colore del testo titolo.")]
     public Color titleColor = Color.white;
 
+    [Header("Hint click")]
+    public TextMeshProUGUI hintText;
+
     [Header("Timing")]
     public float fadeInDuration   = 0.15f;
     public float fadeOutDuration  = 0.25f;
@@ -47,8 +50,17 @@ public class TheSignFilesUI : MonoBehaviour
 
     private Dictionary<CollezionabileType, Image> redactedMap;
     private Coroutine fadeCoroutine;
+    private float hintPhase;
+    private bool  isVisible;
 
     // ── Unity ────────────────────────────────────────────────────────────────────
+
+    void Update()
+    {
+        if (!isVisible || hintText == null) return;
+        hintPhase += Time.unscaledDeltaTime * 1.6f * Mathf.PI * 2f;
+        hintText.alpha = Mathf.Lerp(0.30f, 1f, (Mathf.Sin(hintPhase) + 1f) * 0.5f);
+    }
 
     void Awake()
     {
@@ -158,6 +170,8 @@ public class TheSignFilesUI : MonoBehaviour
 
     IEnumerator FadeIn()
     {
+        isVisible  = true;
+        hintPhase  = 0f;
         canvasGroup.blocksRaycasts = true;
         float t = 0f;
         while (t < fadeInDuration)
@@ -181,5 +195,6 @@ public class TheSignFilesUI : MonoBehaviour
         }
         canvasGroup.alpha          = 0f;
         canvasGroup.blocksRaycasts = false;
+        isVisible                  = false;
     }
 }

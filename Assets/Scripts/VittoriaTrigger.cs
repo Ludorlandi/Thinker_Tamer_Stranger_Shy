@@ -33,25 +33,27 @@ public class VittoriaTrigger : MonoBehaviour
 
         // 1. Blocca il player e mostra il pannello con TUTTI i Redacted visibili
         pc.SetEditMode(true);
+        SoundManager.Instance?.PlaySFX(SoundID.VittoriaReach);
         ui.UpdateAndShow();
 
         // 2. Aspetta 0.5 secondi: tutti i Redacted visibili, player fermo
         yield return new WaitForSecondsRealtime(0.5f);
 
-        // 3. Effetto glitch full-screen (identico al portale):
+        // 3. Suono glitch + effetto full-screen (identico al portale):
         //    schermo si distorce → i Redacted sbloccati spariscono al picco → schermo torna normale
         //    Il player rimane bloccato per tutta la durata del glitch
+        SoundManager.Instance?.PlaySFX(SoundID.GlitchReveal);
         yield return ui.StartGlitchReveal();
 
-        // 4. Ri-abilita il movimento del player
-        pc.SetEditMode(false);
-
-        // 5. Aspetta che il player si muova per chiudere il pannello
+        // 4. Aspetta un attimo e poi aspetta il click per chiudere il pannello
+        yield return new WaitForSecondsRealtime(0.5f);
         yield return new WaitUntil(() =>
-            Mathf.Abs(Input.GetAxisRaw("Horizontal")) > 0.1f ||
-            Input.GetKeyDown(KeyCode.Space));
+            Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1));
 
         ui.Hide();
+
+        // 5. Ri-abilita il player dopo la chiusura
+        pc.SetEditMode(false);
         isRunning = false;
     }
 }

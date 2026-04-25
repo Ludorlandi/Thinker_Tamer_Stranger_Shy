@@ -16,7 +16,9 @@ public enum SoundID
     CheckpointTouch,
     PlayerMove,
     CollezionabilePickup,
-    TrampolinoActivate
+    TrampolinoActivate,
+    VittoriaReach,
+    GlitchReveal
 }
 
 public enum MusicID
