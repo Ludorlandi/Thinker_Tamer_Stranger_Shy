@@ -25,13 +25,13 @@ public class PlaceableUnlockManager : MonoBehaviour
 
         unlockedTypes.Add(type);
 
-        // Notifica tutte le istanze di quel tipo nella scena
-        foreach (var p in FindObjectsByType<Placeable>(FindObjectsSortMode.None))
+        // Notifica tutte le istanze di quel tipo nella scena (incluse quelle inattive)
+        foreach (var p in FindObjectsByType<Placeable>(FindObjectsInactive.Include, FindObjectsSortMode.None))
         {
             if (p.placeableType == type)
                 p.SetUnlocked();
         }
-        foreach (var p in FindObjectsByType<PlaceableJumpA>(FindObjectsSortMode.None))
+        foreach (var p in FindObjectsByType<PlaceableJumpA>(FindObjectsInactive.Include, FindObjectsSortMode.None))
         {
             if (p.placeableType == type)
                 p.SetUnlocked();

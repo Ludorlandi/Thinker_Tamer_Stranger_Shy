@@ -19,13 +19,13 @@ public class DebugTools : MonoBehaviour
     {
         if (PlaceableUnlockManager.Instance == null) return;
 
-        foreach (var p in FindObjectsByType<Placeable>(FindObjectsSortMode.None))
+        foreach (var p in FindObjectsByType<Placeable>(FindObjectsInactive.Include, FindObjectsSortMode.None))
         {
             if (p.placeableType != null)
                 PlaceableUnlockManager.Instance.Unlock(p.placeableType);
         }
 
-        foreach (var p in FindObjectsByType<PlaceableJumpA>(FindObjectsSortMode.None))
+        foreach (var p in FindObjectsByType<PlaceableJumpA>(FindObjectsInactive.Include, FindObjectsSortMode.None))
         {
             if (p.placeableType != null)
                 PlaceableUnlockManager.Instance.Unlock(p.placeableType);

@@ -322,6 +322,8 @@ public class Placeable : MonoBehaviour
     public void SetUnlocked()
     {
         isUnlocked = true;
+        if (spriteRenderers == null)
+            spriteRenderers = GetComponentsInChildren<SpriteRenderer>();
         foreach (var sr in spriteRenderers)
             sr.color = Color.white;
         OnUnlocked?.Invoke();
