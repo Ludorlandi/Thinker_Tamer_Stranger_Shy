@@ -110,5 +110,8 @@ MonoBehaviour:
     volume: 1
     pitchMin: 0.95
     pitchMax: 1.05
-  mainRoomMusic: {fileID: 8300000, guid: 249f41eb3de7d9148adaf47d96137ea7, type: 3}
-  otherAreasMusic: {fileID: 8300000, guid: 3891420107c82764aa938e0f72277741, type: 3}
+  mainRoomBassaMusic: {fileID: 8300000, guid: e03d526fdfdb1194d89199e9822cccc8, type: 3}
+  mainRoomAltaMusic: {fileID: 8300000, guid: 249f41eb3de7d9148adaf47d96137ea7, type: 3}
+  sideRoomBassaMusic: {fileID: 8300000, guid: 3891420107c82764aa938e0f72277741, type: 3}
+  sideRoomAltaMusic: {fileID: 8300000, guid: 19948fe8a6d06c04881c2c3945f6eb85, type: 3}
+  mainRoomFinaleMusic: {fileID: 8300000, guid: 655b707aa92fee34b8298130c1a34ff0, type: 3}
