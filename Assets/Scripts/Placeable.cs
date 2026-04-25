@@ -75,7 +75,6 @@ public class Placeable : MonoBehaviour
     private bool isHovered = false;
     private float currentScaleFactor = 1f;
     private GameObject[] glitchObjects; // tutti i figli il cui nome inizia con "Glitch_"
-    private Collider2D[] ownNonTriggerColliders; // cache per OverlapPoint manuale
 
     void Start()
     {
@@ -101,12 +100,6 @@ public class Placeable : MonoBehaviour
                 glitchList.Add(t.gameObject);
         glitchObjects = glitchList.ToArray();
 
-        // Cache collider non-trigger per il rilevamento manuale del mouse
-        var cols = new System.Collections.Generic.List<Collider2D>();
-        foreach (var c in GetComponentsInChildren<Collider2D>())
-            if (!c.isTrigger) cols.Add(c);
-        ownNonTriggerColliders = cols.ToArray();
-
         // Controlla se già sbloccato (es. stanza caricata dopo aver già raccolto l'item)
         if (PlaceableUnlockManager.Instance != null && PlaceableUnlockManager.Instance.IsUnlocked(placeableType))
             SetUnlocked();
@@ -123,10 +116,15 @@ public class Placeable : MonoBehaviour
 
     bool IsMouseOver()
     {
+        // Controlla solo X e Y: i Placeable sono a z≠0, Bounds.Contains fallirebbe sulla Z.
         Vector2 mp = GetMouseWorldPos();
-        if (ownNonTriggerColliders == null) return false;
-        foreach (var c in ownNonTriggerColliders)
-            if (c != null && c.OverlapPoint(mp)) return true;
+        foreach (var sr in GetComponentsInChildren<SpriteRenderer>())
+        {
+            Bounds b = sr.bounds;
+            if (mp.x >= b.min.x && mp.x <= b.max.x &&
+                mp.y >= b.min.y && mp.y <= b.max.y)
+                return true;
+        }
         return false;
     }
 

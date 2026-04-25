@@ -4,7 +4,7 @@ using UnityEngine;
 public class MusicZone : MonoBehaviour
 {
     [Tooltip("Musica da riprodurre quando il player entra in questa zona")]
-    public MusicID musicToPlay = MusicID.OtherAreas;
+    public MusicID musicToPlay = MusicID.MainRoomBassa;
 
     void Start()
     {

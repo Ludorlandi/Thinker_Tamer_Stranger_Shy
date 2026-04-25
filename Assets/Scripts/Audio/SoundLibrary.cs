@@ -24,8 +24,11 @@ public enum SoundID
 public enum MusicID
 {
     None,
-    MainRoom,
-    OtherAreas
+    MainRoomBassa,
+    MainRoomAlta,
+    SideRoomBassa,
+    SideRoomAlta,
+    MainRoomFinale
 }
 
 [System.Serializable]
@@ -62,11 +65,11 @@ public class SoundLibrary : ScriptableObject
     public SoundEntry[] sounds;
 
     [Header("Musica")]
-    [Tooltip("Traccia musicale per la Main Room")]
-    public AudioClip mainRoomMusic;
-
-    [Tooltip("Traccia musicale per tutte le altre aree")]
-    public AudioClip otherAreasMusic;
+    public AudioClip mainRoomBassaMusic;
+    public AudioClip mainRoomAltaMusic;
+    public AudioClip sideRoomBassaMusic;
+    public AudioClip sideRoomAltaMusic;
+    public AudioClip mainRoomFinaleMusic;
 
     public SoundEntry GetEntry(SoundID id)
     {
@@ -76,13 +79,13 @@ public class SoundLibrary : ScriptableObject
         return null;
     }
 
-    public AudioClip GetMusic(MusicID id)
+    public AudioClip GetMusic(MusicID id) => id switch
     {
-        return id switch
-        {
-            MusicID.MainRoom   => mainRoomMusic,
-            MusicID.OtherAreas => otherAreasMusic,
-            _                  => null
-        };
-    }
+        MusicID.MainRoomBassa   => mainRoomBassaMusic,
+        MusicID.MainRoomAlta    => mainRoomAltaMusic,
+        MusicID.SideRoomBassa   => sideRoomBassaMusic,
+        MusicID.SideRoomAlta    => sideRoomAltaMusic,
+        MusicID.MainRoomFinale  => mainRoomFinaleMusic,
+        _                       => null
+    };
 }

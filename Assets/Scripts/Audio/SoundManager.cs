@@ -20,7 +20,7 @@ public class SoundManager : MonoBehaviour
     public float fadeDuration = 1.5f;
 
     [Tooltip("Musica attiva all'avvio del gioco")]
-    public MusicID startingMusic = MusicID.OtherAreas;
+    public MusicID startingMusic = MusicID.MainRoomBassa;
 
     // Pool SFX — permette suoni sovrapposti
     private const int SFX_POOL_SIZE = 8;
@@ -29,9 +29,11 @@ public class SoundManager : MonoBehaviour
     // Sorgente dedicata al movimento — non si sovrappone mai
     private AudioSource movementSource;
 
-    // musicA = OtherAreas, musicB = MainRoom — sempre in sync, mai fermate
-    private AudioSource musicA; // OtherAreas
-    private AudioSource musicB; // MainRoom
+    // Una AudioSource per ogni valore di MusicID (indice = (int)MusicID).
+    // [0] = None → non usato. [1..N] = tracce vere.
+    // Tutte girano in sync sempre; solo i volumi cambiano.
+    private static readonly int MUSIC_COUNT = System.Enum.GetValues(typeof(MusicID)).Length;
+    private AudioSource[] musicSources;
 
     private MusicID currentMusic = MusicID.None;
     private Coroutine fadeCoroutine;
@@ -103,11 +105,10 @@ public class SoundManager : MonoBehaviour
     public void SetMusicVolume(float value)
     {
         musicVolume = Mathf.Clamp01(value);
-        // Aggiorna il volume della traccia attiva senza toccare quella muta
-        if (currentMusic == MusicID.MainRoom)
-            musicB.volume = musicVolume;
-        else
-            musicA.volume = musicVolume;
+        // Aggiorna solo la traccia attiva, le altre restano a 0
+        int activeIdx = (int)currentMusic;
+        for (int i = 1; i < MUSIC_COUNT; i++)
+            musicSources[i].volume = (i == activeIdx) ? musicVolume : 0f;
     }
 
     // ── Internals ───────────────────────────────────────────────
@@ -134,65 +135,63 @@ public class SoundManager : MonoBehaviour
 
     void BuildMusicSources()
     {
-        var goA = new GameObject("Music_OtherAreas");
-        goA.transform.SetParent(transform);
-        musicA = goA.AddComponent<AudioSource>();
-        musicA.loop = true;
-        musicA.playOnAwake = false;
-        musicA.volume = 0f;
-
-        var goB = new GameObject("Music_MainRoom");
-        goB.transform.SetParent(transform);
-        musicB = goB.AddComponent<AudioSource>();
-        musicB.loop = true;
-        musicB.playOnAwake = false;
-        musicB.volume = 0f;
+        musicSources = new AudioSource[MUSIC_COUNT];
+        // indice 0 = MusicID.None → AudioSource placeholder inutilizzato
+        for (int i = 0; i < MUSIC_COUNT; i++)
+        {
+            string trackName = i == 0 ? "Music_None" : ((MusicID)i).ToString();
+            var go = new GameObject(trackName);
+            go.transform.SetParent(transform);
+            var src = go.AddComponent<AudioSource>();
+            src.loop = true;
+            src.playOnAwake = false;
+            src.volume = 0f;
+            musicSources[i] = src;
+        }
     }
 
-    // Avvia entrambe le tracce in sincronia perfetta tramite DSP scheduling
+    // Avvia tutte le tracce in sincronia perfetta tramite DSP scheduling
     void InitAdaptiveMusic()
     {
         if (library == null) return;
 
-        AudioClip clipOther = library.GetMusic(MusicID.OtherAreas);
-        AudioClip clipMain  = library.GetMusic(MusicID.MainRoom);
-
-        // Assegna i clip (possono essere null se non ancora assegnati)
-        musicA.clip = clipOther;
-        musicB.clip = clipMain;
-
-        // Volumi iniziali in base alla zona di partenza
-        currentMusic = startingMusic;
-        musicA.volume = (startingMusic == MusicID.OtherAreas) ? musicVolume : 0f;
-        musicB.volume = (startingMusic == MusicID.MainRoom)   ? musicVolume : 0f;
-
-        // Partenza sincronizzata — PlayScheduled garantisce lo stesso sample di inizio
         double startDSP = AudioSettings.dspTime + 0.1;
-        if (clipOther != null) musicA.PlayScheduled(startDSP);
-        if (clipMain  != null) musicB.PlayScheduled(startDSP);
+
+        for (int i = 1; i < MUSIC_COUNT; i++)
+        {
+            MusicID id = (MusicID)i;
+            AudioClip clip = library.GetMusic(id);
+            musicSources[i].clip = clip;
+            musicSources[i].volume = (id == startingMusic) ? musicVolume : 0f;
+            if (clip != null) musicSources[i].PlayScheduled(startDSP);
+        }
+
+        currentMusic = startingMusic;
     }
 
     // Fade solo dei volumi — i clip continuano a girare in sync
     IEnumerator FadeToMusic(MusicID target)
     {
-        float startA = musicA.volume;
-        float startB = musicB.volume;
-
-        float targetA = (target == MusicID.OtherAreas) ? musicVolume : 0f;
-        float targetB = (target == MusicID.MainRoom)   ? musicVolume : 0f;
+        int targetIdx = (int)target;
+        float[] startVolumes = new float[MUSIC_COUNT];
+        for (int i = 1; i < MUSIC_COUNT; i++)
+            startVolumes[i] = musicSources[i].volume;
 
         float elapsed = 0f;
         while (elapsed < fadeDuration)
         {
             elapsed += Time.deltaTime;
             float t = Mathf.SmoothStep(0f, 1f, elapsed / fadeDuration);
-            musicA.volume = Mathf.Lerp(startA, targetA, t);
-            musicB.volume = Mathf.Lerp(startB, targetB, t);
+            for (int i = 1; i < MUSIC_COUNT; i++)
+            {
+                float targetVol = (i == targetIdx) ? musicVolume : 0f;
+                musicSources[i].volume = Mathf.Lerp(startVolumes[i], targetVol, t);
+            }
             yield return null;
         }
 
-        musicA.volume = targetA;
-        musicB.volume = targetB;
+        for (int i = 1; i < MUSIC_COUNT; i++)
+            musicSources[i].volume = (i == targetIdx) ? musicVolume : 0f;
     }
 
     AudioSource GetAvailableSource()
