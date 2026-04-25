@@ -57,7 +57,10 @@ public class PlaceableUnlockItem : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D other)
     {
+        Debug.Log($"[UnlockItem] Trigger su '{gameObject.name}' — colpito da: '{other.gameObject.name}' tag: '{other.tag}'");
         if (!other.CompareTag("Player")) return;
+
+        Debug.Log($"[UnlockItem] Player rilevato. Manager: {PlaceableUnlockManager.Instance != null}, typeToUnlock: {typeToUnlock}");
         if (PlaceableUnlockManager.Instance == null) return;
 
         PlaceableUnlockManager.Instance.Unlock(typeToUnlock);

@@ -74,12 +74,14 @@ public class Placeable : MonoBehaviour
     private Vector3 visualCenterOffset;
     private bool isHovered = false;
     private float currentScaleFactor = 1f;
+    private Vector3 initialLocalScale;
     private GameObject[] glitchObjects; // tutti i figli il cui nome inizia con "Glitch_"
 
     void Start()
     {
         cam = Camera.main;
         startPosition = transform.position;
+        initialLocalScale = transform.localScale;
         spriteRenderers = GetComponentsInChildren<SpriteRenderer>();
 
         // Calcola il centro visivo reale dai collider fisici dei blocchi figli
@@ -190,7 +192,7 @@ public class Placeable : MonoBehaviour
         bool canHover = isUnlocked && !isAnchored && !isDragging && !isSnapping;
         float targetScaleFactor = (canHover && isHovered) ? hoverScale : 1f;
         currentScaleFactor = Mathf.Lerp(currentScaleFactor, targetScaleFactor, Time.deltaTime * hoverScaleSpeed);
-        transform.localScale = Vector3.one * currentScaleFactor;
+        transform.localScale = initialLocalScale * currentScaleFactor;
 
         // Oscillazione idle: attiva solo se sbloccato, fermo, non ancorato
         if (isUnlocked && !isDragging && !isSnapping && !isAnchored)
@@ -271,7 +273,7 @@ public class Placeable : MonoBehaviour
             currentLock2 = null;
             isAnchored = false;
             transform.position = startPosition;
-            transform.localScale = Vector3.one;
+            transform.localScale = initialLocalScale;
             transform.rotation = Quaternion.identity;
             currentScaleFactor = 1f;
             SetGlitchActive(true);
