@@ -340,15 +340,22 @@ public class Placeable : MonoBehaviour
             currentLock2 = lockTransform;
     }
 
-    public void OnKeyExitLock(Key sourceKey)
+    public void OnKeyExitLock(Key sourceKey, Transform exitedLock)
     {
         // Non azzerare currentLock se stiamo già snappando verso di esso
         if (isAnchored || isSnapping) return;
 
         if (keyTransform2 == null || sourceKey.transform == keyTransform)
-            currentLock = null;
+        {
+            // Azzera solo se il lock che stiamo uscendo è quello corrente
+            if (currentLock == exitedLock)
+                currentLock = null;
+        }
         else
-            currentLock2 = null;
+        {
+            if (currentLock2 == exitedLock)
+                currentLock2 = null;
+        }
     }
 
     public void ForceUnanchor()
@@ -385,17 +392,22 @@ public class Placeable : MonoBehaviour
 
     Transform FindNearestFreeLock(Transform fromKey)
     {
-        Collider2D[] hits = Physics2D.OverlapCircleAll(fromKey.position, proximitySnapRadius);
+        var filter = new ContactFilter2D { useTriggers = true, useLayerMask = false };
+        var results = new System.Collections.Generic.List<Collider2D>();
+        // Usa un raggio più grande (x3) per trovare lock liberi adiacenti anche quando
+        // la chiave si è spostata verso un lock occupato vicino
+        Physics2D.OverlapCircle(fromKey.position, proximitySnapRadius * 3f, filter, results);
+
         Transform nearest = null;
         float minDist = float.MaxValue;
 
-        foreach (var hit in hits)
+        foreach (var hit in results)
         {
             if (!hit.CompareTag("Lock")) continue;
             LockBlock lb = hit.GetComponent<LockBlock>();
             if (lb == null || lb.IsOccupied()) continue;
 
-            float dist = Vector2.Distance(keyTransform.position, hit.transform.position);
+            float dist = Vector2.Distance(fromKey.position, hit.transform.position);
             if (dist < minDist)
             {
                 minDist = dist;
@@ -442,7 +454,8 @@ public class Placeable : MonoBehaviour
                 {
                     // I LockBlock usano trigger con tag "Lock": trattali come ostacoli
                     // eccetto i LockBlock target in cui stiamo snappando (già in excluded).
-                    if (hit.CompareTag("Lock") && !excluded.Contains(hit.gameObject))
+                    LockBlock hitLb = hit.GetComponent<LockBlock>();
+                    if (hit.CompareTag("Lock") && !excluded.Contains(hit.gameObject) && (hitLb == null || !hitLb.IsOccupied()))
                         return true;
                     continue;
                 }
