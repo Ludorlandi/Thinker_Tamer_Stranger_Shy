@@ -72,7 +72,14 @@ public class AllUnlockedTrigger : MonoBehaviour
         }
 
         foreach (var go in objectsToActivate)
-            if (go != null) go.SetActive(true);
+        {
+            if (go == null) continue;
+            var ghost = go.GetComponent<GhostUntilUnlocked>();
+            if (ghost != null)
+                ghost.Reveal();
+            else
+                go.SetActive(true);
+        }
 
         if (GlitchTransition.Instance != null)
         {
