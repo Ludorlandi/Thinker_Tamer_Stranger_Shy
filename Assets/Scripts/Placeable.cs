@@ -438,10 +438,15 @@ public class Placeable : MonoBehaviour
 
             foreach (var hit in hits)
             {
-                if (hit.isTrigger) continue;
+                if (hit.isTrigger)
+                {
+                    // I LockBlock usano trigger con tag "Lock": trattali come ostacoli
+                    // eccetto i LockBlock target in cui stiamo snappando (già in excluded).
+                    if (hit.CompareTag("Lock") && !excluded.Contains(hit.gameObject))
+                        return true;
+                    continue;
+                }
                 if (excluded.Contains(hit.gameObject)) continue;
-                // Un oggetto che contiene un LockBlock è uno slot di piazzamento, non un ostacolo
-                if (hit.GetComponentInChildren<LockBlock>() != null) continue;
                 bool isOwn = System.Array.Exists(ownColliders, c => c == hit);
                 if (!isOwn) return true;
             }
