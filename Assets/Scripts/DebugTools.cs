@@ -3,6 +3,8 @@ using UnityEngine;
 /// <summary>
 /// Strumento di debug. Rimuovere prima del build finale.
 /// P → sblocca tutti i Placeable nella scena
+/// L → disancora tutti i Placeable
+/// K → toggle salto infinito (gestito da PlayerController)
 /// </summary>
 public class DebugTools : MonoBehaviour
 {

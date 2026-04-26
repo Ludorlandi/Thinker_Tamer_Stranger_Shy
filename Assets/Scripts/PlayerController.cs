@@ -21,8 +21,13 @@ public class PlayerController : MonoBehaviour
 
     private Rigidbody2D rb;
     private bool isGrounded;
+    private bool wasGrounded;
     private float coyoteCounter;
+    private bool hasJumped;
     private bool isInEditMode;
+
+    // ── Debug ───────────────────────────────────────────────────────
+    private bool debugInfiniteJump = false;
 
     void Awake()
     {
@@ -38,6 +43,9 @@ public class PlayerController : MonoBehaviour
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
             return;
         }
+
+        if (Input.GetKeyDown(KeyCode.K))
+            debugInfiniteJump = !debugInfiniteJump;
 
         HandleMovement();
         CheckGround();
@@ -62,20 +70,36 @@ public class PlayerController : MonoBehaviour
             groundLayer | placeableLayer
         );
 
-        if (isGrounded)
+        // Atterraggio: reset del flag di salto
+        if (isGrounded && !wasGrounded)
+            hasJumped = false;
+
+        if (isGrounded && !hasJumped)
             coyoteCounter = coyoteTime;
-        else
+        else if (!isGrounded)
             coyoteCounter -= Time.deltaTime;
+
+        wasGrounded = isGrounded;
     }
 
     void HandleJump()
     {
-        if (Input.GetKeyDown(KeyCode.Space) && coyoteCounter > 0f)
-        {
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
-            coyoteCounter = 0f;
-            SoundManager.Instance?.PlaySFX(SoundID.PlayerJump);
-        }
+        if (!Input.GetKeyDown(KeyCode.Space)) return;
+
+        bool canJump = debugInfiniteJump || (coyoteCounter > 0f && !hasJumped);
+        if (!canJump) return;
+
+        rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+        coyoteCounter = 0f;
+        if (!debugInfiniteJump) hasJumped = true;
+        SoundManager.Instance?.PlaySFX(SoundID.PlayerJump);
+    }
+
+    void OnGUI()
+    {
+        if (!debugInfiniteJump) return;
+        GUI.color = new Color(1f, 0.85f, 0f);
+        GUI.Label(new Rect(10, 10, 300, 30), "[ SALTO UNLOCKED ]");
     }
 
     public bool IsGrounded => isGrounded;
