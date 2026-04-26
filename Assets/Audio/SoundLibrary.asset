@@ -115,3 +115,4 @@ MonoBehaviour:
   sideRoomBassaMusic: {fileID: 8300000, guid: 3891420107c82764aa938e0f72277741, type: 3}
   sideRoomAltaMusic: {fileID: 8300000, guid: 19948fe8a6d06c04881c2c3945f6eb85, type: 3}
   mainRoomFinaleMusic: {fileID: 8300000, guid: 655b707aa92fee34b8298130c1a34ff0, type: 3}
+  vittoriaMusic: {fileID: 8300000, guid: 68319bf55d16ff94fbb52138a5abe5aa, type: 3}

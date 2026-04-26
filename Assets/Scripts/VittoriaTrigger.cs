@@ -8,6 +8,10 @@ using UnityEngine;
 [RequireComponent(typeof(Collider2D))]
 public class VittoriaTrigger : MonoBehaviour
 {
+    [Header("Musica Vittoria")]
+    [Tooltip("Traccia da avviare (in crossfade, stesso timestamp) quando il player tocca la vittoria")]
+    public MusicID musicaVittoria = MusicID.Vittoria;
+
     private bool isRunning = false;
 
     void OnTriggerEnter2D(Collider2D other)
@@ -31,8 +35,9 @@ public class VittoriaTrigger : MonoBehaviour
             yield break;
         }
 
-        // 1. Blocca il player e mostra il pannello con TUTTI i Redacted visibili
+        // 1. Blocca il player, avvia musica vittoria e mostra il pannello
         pc.SetEditMode(true);
+        SoundManager.Instance?.PlayMusic(musicaVittoria);
         SoundManager.Instance?.PlaySFX(SoundID.VittoriaReach);
         ui.UpdateAndShow();
 

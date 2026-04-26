@@ -28,7 +28,8 @@ public enum MusicID
     MainRoomAlta,
     SideRoomBassa,
     SideRoomAlta,
-    MainRoomFinale
+    MainRoomFinale,
+    Vittoria
 }
 
 [System.Serializable]
@@ -70,6 +71,7 @@ public class SoundLibrary : ScriptableObject
     public AudioClip sideRoomBassaMusic;
     public AudioClip sideRoomAltaMusic;
     public AudioClip mainRoomFinaleMusic;
+    public AudioClip vittoriaMusic;
 
     public SoundEntry GetEntry(SoundID id)
     {
@@ -86,6 +88,7 @@ public class SoundLibrary : ScriptableObject
         MusicID.SideRoomBassa   => sideRoomBassaMusic,
         MusicID.SideRoomAlta    => sideRoomAltaMusic,
         MusicID.MainRoomFinale  => mainRoomFinaleMusic,
+        MusicID.Vittoria        => vittoriaMusic,
         _                       => null
     };
 }

@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89a9f40fbd8fdb34bafad939f502d53b, type: 3}
   m_Name: PlaceableType_Jump2
   m_EditorClassIdentifier: Assembly-CSharp::PlaceableTypeSO
-  unlockSprite: {fileID: 0}
+  unlockSprite: {fileID: 21300000, guid: 1056f528014845841a0a869d1b6155be, type: 3}
