@@ -15,7 +15,7 @@ public class IntroCutscene : MonoBehaviour
     public GameObject player;
 
     [Header("Timing")]
-    public float holdDuration  = 0.5f;
+    public float holdDuration  = 1.5f;
     public float panDuration   = 1.0f;
 
     private static bool s_hasPlayed = false;

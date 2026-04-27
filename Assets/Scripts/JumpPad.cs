@@ -86,6 +86,7 @@ public class JumpPad : MonoBehaviour
         if (pc == null) return;
 
         pc.ForceJump(pc.jumpForce * jumpMultiplier);
+        pc.SuppressJump(launchCooldown);
         lastLaunchTime = Time.time;
         SoundManager.Instance?.PlaySFX(SoundID.TrampolinoActivate);
 

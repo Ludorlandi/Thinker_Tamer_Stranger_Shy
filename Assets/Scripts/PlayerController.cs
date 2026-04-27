@@ -28,6 +28,7 @@ public class PlayerController : MonoBehaviour
 
     // ── Debug ───────────────────────────────────────────────────────
     private bool debugInfiniteJump = false;
+    private float _suppressJumpUntil = 0f;
 
     void Awake()
     {
@@ -85,6 +86,7 @@ public class PlayerController : MonoBehaviour
     void HandleJump()
     {
         if (!Input.GetKeyDown(KeyCode.Space)) return;
+        if (Time.time < _suppressJumpUntil) return;
 
         bool canJump = debugInfiniteJump || (coyoteCounter > 0f && !hasJumped);
         if (!canJump) return;
@@ -110,6 +112,15 @@ public class PlayerController : MonoBehaviour
         if (isInEditMode) return;
         rb.linearVelocity = new Vector2(rb.linearVelocity.x, force);
         SoundManager.Instance?.PlaySFX(SoundID.PlayerJump);
+    }
+
+    /// <summary>
+    /// Blocca l'input manuale del salto per <duration> secondi.
+    /// Chiamato da JumpPad per impedire che lo Space sovrascriva il lancio.
+    /// </summary>
+    public void SuppressJump(float duration)
+    {
+        _suppressJumpUntil = Time.time + duration;
     }
 
     public void SetEditMode(bool active)

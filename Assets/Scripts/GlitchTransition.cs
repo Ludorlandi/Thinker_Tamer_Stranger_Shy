@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class GlitchTransition : MonoBehaviour
@@ -10,6 +11,12 @@ public class GlitchTransition : MonoBehaviour
     private Image    glitchImage;
     private static readonly int ColorProp = Shader.PropertyToID("_GlitchColor");
     private Color defaultColor = new Color(0.35f, 0.65f, 0.50f, 1f);
+    [Header("Audio")]
+    [Tooltip("Suono riprodotto durante il GlitchIn al caricamento della scena successiva")]
+    public AudioClip glitchSound;
+
+    private float       _persistGlitchInDuration;
+    private AudioSource _audioSource;
 
     void Awake()
     {
@@ -21,12 +28,50 @@ public class GlitchTransition : MonoBehaviour
         glitchMat = Instantiate(glitchImage.material);
         glitchImage.material = glitchMat;
         SetIntensity(0f);
+
+        _audioSource            = gameObject.AddComponent<AudioSource>();
+        _audioSource.playOnAwake = false;
+        _audioSource.loop        = false;
     }
 
-    void SetIntensity(float v)
+    public void SetIntensity(float v)
     {
         glitchMat.SetFloat("_Intensity",   Mathf.Clamp01(v));
         glitchMat.SetFloat("_GlitchTime",  Time.unscaledTime);
+    }
+
+    /// <summary>
+    /// Rende l'oggetto persistente tra scene e lancia GlitchIn alla scena successiva.
+    /// Usato dal MenuController per la transizione Menu → MainScene.
+    /// DontDestroyOnLoad richiede un root GameObject: aggiungiamo un Canvas autonomo
+    /// e stacchiamo dal Canvas padre prima di chiamarlo.
+    /// </summary>
+    public void PersistForNextScene(float glitchInDuration = 0.35f)
+    {
+        _persistGlitchInDuration = glitchInDuration;
+        // GlitchTransition deve essere root per DontDestroyOnLoad:
+        // nella scena Menu è figlio di GlitchOverlay (Canvas root) → ok.
+        DontDestroyOnLoad(transform.root.gameObject);
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+        StartCoroutine(GlitchInWithSound(_persistGlitchInDuration));
+    }
+
+    IEnumerator GlitchInWithSound(float duration)
+    {
+        // Avvia il suono Glitch
+        if (glitchSound != null && _audioSource != null)
+            _audioSource.PlayOneShot(glitchSound);
+
+        yield return StartCoroutine(GlitchIn(duration));
+
+        // Interrompe il suono alla fine del glitch
+        if (_audioSource != null && _audioSource.isPlaying)
+            _audioSource.Stop();
     }
 
     public void SetColor(Color c)   => glitchMat.SetColor(ColorProp, c);
