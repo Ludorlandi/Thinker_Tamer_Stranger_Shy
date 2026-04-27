@@ -5,6 +5,7 @@ using UnityEngine;
 /// Anima lo spritesheet e rimane sempre visibile finché il Placeable padre è sbloccato.
 /// Non interagisce con GlitchContainer né con gli eventi di drag.
 /// </summary>
+[ExecuteAlways]
 [RequireComponent(typeof(SpriteRenderer))]
 public class GlitchEffectPlaceable : MonoBehaviour
 {

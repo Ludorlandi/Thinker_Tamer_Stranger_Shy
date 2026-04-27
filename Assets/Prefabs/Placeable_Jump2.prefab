@@ -310,8 +310,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::JumpPad
   jumpMultiplier: 1.5
   launchCooldown: 0.4
-  visualTransform: {fileID: 0}
-  trampolinoSheet: {fileID: 0}
+  visualTransform: {fileID: 1000010, guid: d1e2f3a4b5c6d7e8f9a0b1c2d3e4f503, type: 3}
+  trampolinoSheet: {fileID: 2800000, guid: 8e1b75f91e1a9544f9593861913ee47f, type: 3}
   trampolinoColumns: 6
   trampolinoRows: 1
   trampolinoFps: 48
