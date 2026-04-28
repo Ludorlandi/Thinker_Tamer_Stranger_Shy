@@ -8,6 +8,9 @@ using UnityEngine;
 public class GhostUntilUnlocked : MonoBehaviour
 {
     [Header("Ghost Pulse")]
+    [Tooltip("Se false, l'oggetto parte completamente invisibile (alpha=0) senza pulse. Usare quando deve essere del tutto nascosto fino allo sblocco.")]
+    public bool startVisibleAsGhost = true;
+
     [Tooltip("Opacità minima del pulse (come minAlpha della grid)")]
     [Range(0f, 1f)] public float pulseMinAlpha = 0.3f;
 
@@ -39,11 +42,16 @@ public class GhostUntilUnlocked : MonoBehaviour
         // Disabilita tutti i collider
         foreach (var col in colliders)
             col.enabled = false;
+
+        // Se non deve essere visibile come ghost, parti completamente invisibile
+        if (!startVisibleAsGhost)
+            SetAlpha(0f);
     }
 
     void Update()
     {
         if (isRevealed) return;
+        if (!startVisibleAsGhost) return; // resta invisibile, non pulsare
 
         // Pulse sinusoidale identico a GridPlaneController.ComputePulseAlpha()
         float t    = Time.realtimeSinceStartup;

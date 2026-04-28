@@ -34,10 +34,12 @@ public class JumpPad : MonoBehaviour
     private Sprite[] frames;
     private SpriteRenderer visualSR;
     private Coroutine animCoroutine;
+    private bool wasActive = false; // traccia drag+anchored per cambio sprite
 
     void Start()
     {
-        placeable = GetComponent<Placeable>();
+        // Cerca il Placeable sul proprio GameObject, poi in su (es. Jump child di Jump2)
+        placeable = GetComponent<Placeable>() ?? GetComponentInParent<Placeable>();
 
         if (visualTransform != null)
             visualSR = visualTransform.GetComponent<SpriteRenderer>();
@@ -66,10 +68,27 @@ public class JumpPad : MonoBehaviour
         }
     }
 
+    void Update()
+    {
+        if (frames == null || visualSR == null || animCoroutine != null || placeable == null) return;
+        // Mostra primo frame quando trascinato o ancorato, ultimo frame quando idle/floating
+        bool active = placeable.IsAnchored || placeable.IsDragging;
+        if (active == wasActive) return;
+        wasActive = active;
+        if (active) SetPlacedSprite();
+        else SetIdleSprite();
+    }
+
     void SetIdleSprite()
     {
         if (visualSR == null || frames == null || frames.Length == 0) return;
-        visualSR.sprite = frames[0];
+        visualSR.sprite = frames[frames.Length - 1]; // ultimo frame = stato idle/floating
+    }
+
+    void SetPlacedSprite()
+    {
+        if (visualSR == null || frames == null || frames.Length == 0) return;
+        visualSR.sprite = frames[0]; // primo frame = drag o snappato
     }
 
     void OnTriggerEnter2D(Collider2D other)
@@ -134,7 +153,7 @@ public class JumpPad : MonoBehaviour
             yield return new WaitForSeconds(frameDuration);
         }
 
-        SetIdleSprite();
+        SetPlacedSprite(); // dopo l'animazione il pad è piazzato → primo frame
         animCoroutine = null;
     }
 }

@@ -1,4 +1,5 @@
 using System.Collections;
+using TMPro;
 using UnityEngine;
 
 /// <summary>
@@ -63,6 +64,16 @@ public class PlaceableJumpA : MonoBehaviour
     [Tooltip("Frazione del jumpForce del player applicata dall'orb. 0.7 = 70% del salto base.")]
     [Range(0f, 2f)]
     public float jumpForceFraction = 0.7f;
+
+    // ── Hint Label ───────────────────────────────────────────────
+    [Header("Hint Label")]
+    [Tooltip("Font da usare per la scritta che appare sopra al player.")]
+    public TMP_FontAsset hintFont;
+    [Tooltip("Dimensione della scritta in unità Unity.")]
+    [Range(0.1f, 1f)]
+    public float hintFontSize = 0.28f;
+    [Tooltip("Offset rispetto al centro del player.")]
+    public Vector2 hintOffset = new Vector2(0f, 1.1f);
 
     // ── Idle Bob ─────────────────────────────────────────────────
     [Header("Idle Bob (solo quando non piazzato)")]
@@ -130,6 +141,9 @@ public class PlaceableJumpA : MonoBehaviour
     private bool orbUsed = false;
     private PlayerController playerController;
 
+    // Hint label
+    private TMP_Text hintLabel;
+
     // ── Unity ────────────────────────────────────────────────────
 
     void Start()
@@ -161,6 +175,23 @@ public class PlaceableJumpA : MonoBehaviour
             SetUnlocked();
         else
             ApplyLockedVisual();
+
+        CreateHintLabel();
+    }
+
+    void CreateHintLabel()
+    {
+        var go = new GameObject("HintLabel_Jump");
+        go.transform.SetParent(transform);
+        var tmp = go.AddComponent<TextMeshPro>();
+        tmp.text = "Jump";
+        tmp.alignment = TextAlignmentOptions.Center;
+        tmp.fontSize = hintFontSize;
+        tmp.color = Color.white;
+        tmp.sortingOrder = 200;
+        if (hintFont != null) tmp.font = hintFont;
+        tmp.gameObject.SetActive(false);
+        hintLabel = tmp;
     }
 
     void BuildTrampolinoFrames()
@@ -196,6 +227,13 @@ public class PlaceableJumpA : MonoBehaviour
     {
         if (trampolinoFrames == null || trampolinoFrames.Length == 0) return;
         if (mainSpriteRenderer != null)
+            mainSpriteRenderer.sprite = trampolinoFrames[trampolinoFrames.Length - 1];
+    }
+
+    void SetPlacedSprite()
+    {
+        if (trampolinoFrames == null || trampolinoFrames.Length == 0) return;
+        if (mainSpriteRenderer != null)
             mainSpriteRenderer.sprite = trampolinoFrames[0];
     }
 
@@ -208,6 +246,10 @@ public class PlaceableJumpA : MonoBehaviour
         UpdateScale();
         UpdateAnimation();
         CheckOrbInput();
+
+        // Aggiorna posizione label sopra al player
+        if (hintLabel != null && hintLabel.gameObject.activeSelf && player != null)
+            hintLabel.transform.position = (Vector2)player.transform.position + hintOffset;
     }
 
     // ── Input Mouse (manuale, bypassa il raycast di Unity) ───────
@@ -236,6 +278,7 @@ public class PlaceableJumpA : MonoBehaviour
                 isDragging = true;
                 transform.rotation = Quaternion.identity;
                 dragOffset = transform.position - mouseWorld;
+                if (trampolinoSheet != null) SetPlacedSprite();
                 SoundManager.Instance?.PlaySFX(SoundID.PlaceableDragStart);
 
                 if (player != null)
@@ -266,6 +309,7 @@ public class PlaceableJumpA : MonoBehaviour
             transform.localScale = baseScale;
             transform.rotation = Quaternion.identity;
             currentScaleFactor = 1f;
+            if (trampolinoSheet != null) SetIdleSprite();
             SoundManager.Instance?.PlaySFX(SoundID.PlaceableReturn);
 
             if (player != null)
@@ -287,6 +331,7 @@ public class PlaceableJumpA : MonoBehaviour
         if (IsOverlapping())
         {
             transform.position = startPosition;
+            if (trampolinoSheet != null) SetIdleSprite();
             SoundManager.Instance?.PlaySFX(SoundID.PlaceableFailedSnap);
         }
         else
@@ -295,6 +340,7 @@ public class PlaceableJumpA : MonoBehaviour
             isPlaced = true;
             currentScaleFactor = 1f;
             pulsePhase = 0f;
+            if (trampolinoSheet != null) SetPlacedSprite();
             SoundManager.Instance?.PlaySFX(SoundID.PlaceableAnchored);
         }
 
@@ -386,6 +432,8 @@ public class PlaceableJumpA : MonoBehaviour
         playerInOrb = true;
         orbUsed = false;
 
+        if (hintLabel != null) hintLabel.gameObject.SetActive(true);
+
         // Modalità trampolino: anima e suona al tocco
         if (trampolinoSheet != null)
         {
@@ -400,6 +448,7 @@ public class PlaceableJumpA : MonoBehaviour
         if (!other.CompareTag("Player")) return;
         playerInOrb = false;
         orbUsed = false;
+        if (hintLabel != null) hintLabel.gameObject.SetActive(false);
     }
 
     // ── Overlap Check ─────────────────────────────────────────────
@@ -476,7 +525,7 @@ public class PlaceableJumpA : MonoBehaviour
             yield return new WaitForSeconds(frameDuration);
         }
 
-        SetIdleSprite();
+        SetPlacedSprite();
         trampolinoAnim = null;
     }
 

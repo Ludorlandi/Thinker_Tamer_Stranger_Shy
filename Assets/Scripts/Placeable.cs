@@ -67,6 +67,7 @@ public class Placeable : MonoBehaviour
     public float hoverBobMultiplier = 2f;
 
     public bool IsAnchored => isAnchored;
+    public bool IsDragging => isDragging;
 
     private bool isUnlocked = false;
     private SpriteRenderer[] spriteRenderers;
@@ -296,11 +297,15 @@ public class Placeable : MonoBehaviour
 
         // Se non c'è un lock rilevato dal trigger, cerca il più vicino nel raggio
         if (currentLock == null && keyTransform != null)
-            currentLock = FindNearestFreeLock(keyTransform);
+            currentLock = FindNearestFreeLock(keyTransform, null);
 
         bool dualKey = keyTransform2 != null;
         if (dualKey && currentLock2 == null && keyTransform2 != null)
-            currentLock2 = FindNearestFreeLock(keyTransform2);
+            currentLock2 = FindNearestFreeLock(keyTransform2, currentLock); // esclude il lock già preso da key1
+
+        // Sicurezza: le due chiavi non possono puntare allo stesso lock
+        if (dualKey && currentLock != null && currentLock == currentLock2)
+            currentLock2 = null;
 
         bool canSnap = currentLock != null && (!dualKey || currentLock2 != null);
 
@@ -335,9 +340,16 @@ public class Placeable : MonoBehaviour
         if (lockTransform.GetComponent<LockBlock>().IsOccupied()) return;
 
         if (keyTransform2 == null || sourceKey.transform == keyTransform)
-            currentLock = lockTransform;
+        {
+            // Non prendere un lock già assegnato all'altra chiave
+            if (lockTransform != currentLock2)
+                currentLock = lockTransform;
+        }
         else
-            currentLock2 = lockTransform;
+        {
+            if (lockTransform != currentLock)
+                currentLock2 = lockTransform;
+        }
     }
 
     public void OnKeyExitLock(Key sourceKey, Transform exitedLock)
@@ -390,7 +402,7 @@ public class Placeable : MonoBehaviour
             sr.color = lockedTint;
     }
 
-    Transform FindNearestFreeLock(Transform fromKey)
+    Transform FindNearestFreeLock(Transform fromKey, Transform excludeLock)
     {
         var filter = new ContactFilter2D { useTriggers = true, useLayerMask = false };
         var results = new System.Collections.Generic.List<Collider2D>();
@@ -404,6 +416,7 @@ public class Placeable : MonoBehaviour
         foreach (var hit in results)
         {
             if (!hit.CompareTag("Lock")) continue;
+            if (hit.transform == excludeLock) continue; // non usare il lock già assegnato all'altra chiave
             LockBlock lb = hit.GetComponent<LockBlock>();
             if (lb == null || lb.IsOccupied()) continue;
 
@@ -444,7 +457,7 @@ public class Placeable : MonoBehaviour
                 box.size.y * Mathf.Abs(col.transform.lossyScale.y)
             );
             float angle = col.transform.eulerAngles.z;
-            Vector2 checkSize = worldSize * 0.9f;
+            Vector2 checkSize = worldSize * 0.75f;
 
             Collider2D[] hits = Physics2D.OverlapBoxAll(worldCenter, checkSize, angle, mask);
 
@@ -452,10 +465,11 @@ public class Placeable : MonoBehaviour
             {
                 if (hit.isTrigger)
                 {
-                    // I LockBlock usano trigger con tag "Lock": trattali come ostacoli
-                    // eccetto i LockBlock target in cui stiamo snappando (già in excluded).
+                    // I LockBlock usano trigger con tag "Lock": sono ostacoli solo se
+                    // OCCUPATI da un altro placeable (evita compenetrazione tra pezzi
+                    // già snappati). Lock Blocks vuoti non bloccano il piazzamento.
                     LockBlock hitLb = hit.GetComponent<LockBlock>();
-                    if (hit.CompareTag("Lock") && !excluded.Contains(hit.gameObject) && (hitLb == null || !hitLb.IsOccupied()))
+                    if (hit.CompareTag("Lock") && !excluded.Contains(hit.gameObject) && hitLb != null && hitLb.IsOccupied())
                         return true;
                     continue;
                 }

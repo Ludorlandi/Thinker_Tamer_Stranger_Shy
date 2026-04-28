@@ -25,11 +25,16 @@ public class PlaceableUnlockManager : MonoBehaviour
 
         unlockedTypes.Add(type);
 
-        // Notifica tutte le istanze di quel tipo nella scena (incluse quelle inattive)
+        // Notifica tutte le istanze di quel tipo nella scena (incluse quelle inattive).
+        // Salta i Placeable che sono figli di un altro Placeable (es. il JumpPad child
+        // di Placeable_Jump2 che ha un Placeable separato per l'accesso a IsAnchored).
         foreach (var p in FindObjectsByType<Placeable>(FindObjectsInactive.Include, FindObjectsSortMode.None))
         {
-            if (p.placeableType == type)
-                p.SetUnlocked();
+            if (p.placeableType != type) continue;
+            bool isChildOfPlaceable = p.transform.parent != null &&
+                                      p.transform.parent.GetComponentInParent<Placeable>() != null;
+            if (isChildOfPlaceable) continue;
+            p.SetUnlocked();
         }
         foreach (var p in FindObjectsByType<PlaceableJumpA>(FindObjectsInactive.Include, FindObjectsSortMode.None))
         {

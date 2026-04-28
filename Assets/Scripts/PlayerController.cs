@@ -71,9 +71,13 @@ public class PlayerController : MonoBehaviour
             groundLayer | placeableLayer
         );
 
-        // Atterraggio: reset del flag di salto
-        if (isGrounded && !wasGrounded)
-            hasJumped = false;
+        if (isGrounded)
+        {
+            if (!wasGrounded)
+                hasJumped = false; // atterraggio normale
+            else if (hasJumped && Mathf.Abs(rb.linearVelocity.y) < 0.5f)
+                hasJumped = false; // salto bloccato dal soffitto: il player non è mai decollato
+        }
 
         if (isGrounded && !hasJumped)
             coyoteCounter = coyoteTime;

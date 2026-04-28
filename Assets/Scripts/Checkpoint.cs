@@ -101,10 +101,19 @@ public class Checkpoint : MonoBehaviour
         // Saturazione via MaterialPropertyBlock (nessuna istanza extra di materiale)
         if (_sr != null)
         {
-            var mpb = new MaterialPropertyBlock();
-            _sr.GetPropertyBlock(mpb);
-            mpb.SetFloat("_Saturation", active ? 1f : 0f);
-            _sr.SetPropertyBlock(mpb);
+            if (_sharedMat != null)
+            {
+                var mpb = new MaterialPropertyBlock();
+                _sr.GetPropertyBlock(mpb);
+                mpb.SetFloat("_Saturation", active ? 1f : 0f);
+                _sr.SetPropertyBlock(mpb);
+            }
+            else
+            {
+                // Fallback quando lo shader non è disponibile in build:
+                // usa il colore del SpriteRenderer per simulare il grigio
+                _sr.color = active ? Color.white : new Color(0.35f, 0.35f, 0.35f, 1f);
+            }
         }
     }
 
