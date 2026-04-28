@@ -12,7 +12,7 @@ public class GlitchTransition : MonoBehaviour
     private static readonly int ColorProp = Shader.PropertyToID("_GlitchColor");
     private Color defaultColor = new Color(0.35f, 0.65f, 0.50f, 1f);
     [Header("Audio")]
-    [Tooltip("Suono riprodotto durante il GlitchIn al caricamento della scena successiva")]
+    [Tooltip("Suono riprodotto in loop durante ogni transizione GlitchOut / GlitchIn")]
     public AudioClip glitchSound;
 
     private float       _persistGlitchInDuration;
@@ -63,13 +63,19 @@ public class GlitchTransition : MonoBehaviour
 
     IEnumerator GlitchInWithSound(float duration)
     {
-        // Avvia il suono Glitch
-        if (glitchSound != null && _audioSource != null)
-            _audioSource.PlayOneShot(glitchSound);
-
         yield return StartCoroutine(GlitchIn(duration));
+    }
 
-        // Interrompe il suono alla fine del glitch
+    void PlayGlitchSound()
+    {
+        if (glitchSound == null || _audioSource == null) return;
+        _audioSource.clip   = glitchSound;
+        _audioSource.loop   = true;
+        _audioSource.Play();
+    }
+
+    void StopGlitchSound()
+    {
         if (_audioSource != null && _audioSource.isPlaying)
             _audioSource.Stop();
     }
@@ -80,6 +86,7 @@ public class GlitchTransition : MonoBehaviour
     // Glitch crescente fino a schermo pieno (~0.3s consigliato)
     public IEnumerator GlitchOut(float duration)
     {
+        PlayGlitchSound();
         float t = 0f;
         while (t < duration)
         {
@@ -91,11 +98,13 @@ public class GlitchTransition : MonoBehaviour
             yield return null;
         }
         SetIntensity(1f);
+        StopGlitchSound();
     }
 
     // Glitch decrescente fino a 0 (~0.35s consigliato)
     public IEnumerator GlitchIn(float duration)
     {
+        PlayGlitchSound();
         float t = 0f;
         while (t < duration)
         {
@@ -107,5 +116,6 @@ public class GlitchTransition : MonoBehaviour
             yield return null;
         }
         SetIntensity(0f);
+        StopGlitchSound();
     }
 }

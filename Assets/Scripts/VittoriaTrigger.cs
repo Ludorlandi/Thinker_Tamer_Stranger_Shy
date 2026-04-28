@@ -1,9 +1,14 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Attacca questo script al GameObject "Vittoria" in scena.
 /// Quando il player lo tocca, mostra il pannello TheSignFilesUI.
+///
+/// Se il player ha raccolto tutti e 4 i collezionabili e clicca il tasto sinistro del mouse,
+/// parte la sequenza finale: glitch → video CiStannoTracciando → ritorno al Menu.
+/// Altrimenti il click chiude il pannello e il player continua ad esplorare.
 /// </summary>
 [RequireComponent(typeof(Collider2D))]
 public class VittoriaTrigger : MonoBehaviour
@@ -11,6 +16,10 @@ public class VittoriaTrigger : MonoBehaviour
     [Header("Musica Vittoria")]
     [Tooltip("Traccia da avviare (in crossfade, stesso timestamp) quando il player tocca la vittoria")]
     public MusicID musicaVittoria = MusicID.Vittoria;
+
+    [Header("Glitch sequenza finale")]
+    public float glitchOutDuration  = 0.30f;
+    public float glitchInDuration   = 0.35f;
 
     private bool isRunning = false;
 
@@ -44,21 +53,61 @@ public class VittoriaTrigger : MonoBehaviour
         // 2. Aspetta 0.5 secondi: tutti i Redacted visibili, player fermo
         yield return new WaitForSecondsRealtime(0.5f);
 
-        // 3. Suono glitch + effetto full-screen (identico al portale):
+        // 3. Effetto glitch full-screen:
         //    schermo si distorce → i Redacted sbloccati spariscono al picco → schermo torna normale
-        //    Il player rimane bloccato per tutta la durata del glitch
-        SoundManager.Instance?.PlaySFX(SoundID.GlitchReveal);
         yield return ui.StartGlitchReveal();
 
-        // 4. Aspetta un attimo e poi aspetta il click per chiudere il pannello
+        // 4. Aspetta un attimo, poi aspetta il click sinistro del mouse
         yield return new WaitForSecondsRealtime(0.5f);
-        yield return new WaitUntil(() =>
-            Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1));
+        yield return new WaitUntil(() => Input.GetMouseButtonDown(0));
 
+        // 5. Tutti e 4 i collezionabili raccolti → sequenza finale
+        bool tuttiRaccolti = CollezionabileManager.Instance != null &&
+                             CollezionabileManager.Instance.DecryptedCount >= 4;
+
+        if (tuttiRaccolti)
+        {
+            yield return StartCoroutine(SequenzaFinale(ui));
+        }
+        else
+        {
+            // Meno di 4 collezionabili: chiudi pannello e riabilita il player
+            ui.Hide();
+            pc.SetEditMode(false);
+            isRunning = false;
+        }
+    }
+
+    IEnumerator SequenzaFinale(TheSignFilesUI ui)
+    {
+        VideoPlayerScreen vps = VideoPlayerScreen.Instance;
+
+        // Glitch out → schermo coperto
+        if (GlitchTransition.Instance != null)
+            yield return StartCoroutine(GlitchTransition.Instance.GlitchOut(glitchOutDuration));
+
+        // Schermo coperto: nascondi il pannello e taglia la musica di sottofondo
         ui.Hide();
+        SoundManager.Instance?.StopMusicImmediate();
 
-        // 5. Ri-abilita il player dopo la chiusura
-        pc.SetEditMode(false);
-        isRunning = false;
+        if (vps != null)
+        {
+            // Prepara il video e mostra lo sfondo nero (ancora sotto il glitch)
+            yield return vps.PrepareAndShow();
+
+            // Glitch in → rivela lo schermo nero con il video pronto
+            if (GlitchTransition.Instance != null)
+                yield return StartCoroutine(GlitchTransition.Instance.GlitchIn(glitchInDuration));
+
+            // Avvia il video e aspetta che finisca
+            vps.StartPlayback();
+            yield return vps.WaitForEnd();
+
+            // Glitch out finale prima di tornare al menu
+            if (GlitchTransition.Instance != null)
+                yield return StartCoroutine(GlitchTransition.Instance.GlitchOut(glitchOutDuration));
+        }
+
+        SceneManager.LoadScene("Menu");
     }
 }

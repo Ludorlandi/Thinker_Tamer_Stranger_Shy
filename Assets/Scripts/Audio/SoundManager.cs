@@ -97,6 +97,18 @@ public class SoundManager : MonoBehaviour
         fadeCoroutine = StartCoroutine(FadeToMusic(id));
     }
 
+    /// <summary>
+    /// Azzera immediatamente il volume di tutte le tracce musicali.
+    /// Usare quando la transizione visiva copre già lo schermo (es. GlitchOut al picco).
+    /// </summary>
+    public void StopMusicImmediate()
+    {
+        if (fadeCoroutine != null) StopCoroutine(fadeCoroutine);
+        currentMusic = MusicID.None;
+        for (int i = 1; i < MUSIC_COUNT; i++)
+            musicSources[i].volume = 0f;
+    }
+
     public void SetSFXVolume(float value)
     {
         sfxVolume = Mathf.Clamp01(value);
