@@ -70,8 +70,8 @@ public class PlaceableJumpA : MonoBehaviour
     [Tooltip("Font da usare per la scritta che appare sopra al player.")]
     public TMP_FontAsset hintFont;
     [Tooltip("Dimensione della scritta in unità Unity.")]
-    [Range(0.1f, 1f)]
-    public float hintFontSize = 0.28f;
+    [Range(0.1f, 2f)]
+    public float hintFontSize = 0.55f;
     [Tooltip("Offset rispetto al centro del player.")]
     public Vector2 hintOffset = new Vector2(0f, 1.1f);
 
@@ -189,7 +189,11 @@ public class PlaceableJumpA : MonoBehaviour
         tmp.fontSize = hintFontSize;
         tmp.color = Color.white;
         tmp.sortingOrder = 200;
+        tmp.overflowMode = TextOverflowModes.Overflow; // non clippare mai
         if (hintFont != null) tmp.font = hintFont;
+        // RectTransform abbastanza grande da contenere il testo a qualsiasi dimensione
+        var rect = go.GetComponent<RectTransform>();
+        rect.sizeDelta = new Vector2(4f, 2f);
         tmp.gameObject.SetActive(false);
         hintLabel = tmp;
     }
