@@ -19,6 +19,8 @@ using UnityEngine;
 /// </summary>
 public class PlaceableJumpA : MonoBehaviour
 {
+    public static bool alreadyactivated;
+
     // ── Unlock ────────────────────────────────────────────────────
     [Header("Unlock")]
     [Tooltip("Il tipo di questo Placeable. Deve corrispondere al PlaceableUnlockItem nella scena.")]
@@ -70,8 +72,8 @@ public class PlaceableJumpA : MonoBehaviour
     [Tooltip("Font da usare per la scritta che appare sopra al player.")]
     public TMP_FontAsset hintFont;
     [Tooltip("Dimensione della scritta in unità Unity.")]
-    [Range(0.1f, 2f)]
-    public float hintFontSize = 0.55f;
+    [Range(0.1f, 50f)]
+    public float hintFontSize = 50f;
     [Tooltip("Offset rispetto al centro del player.")]
     public Vector2 hintOffset = new Vector2(0f, 1.1f);
 
@@ -193,7 +195,7 @@ public class PlaceableJumpA : MonoBehaviour
         if (hintFont != null) tmp.font = hintFont;
         // RectTransform abbastanza grande da contenere il testo a qualsiasi dimensione
         var rect = go.GetComponent<RectTransform>();
-        rect.sizeDelta = new Vector2(4f, 2f);
+        rect.sizeDelta = new Vector2(100f, 50f);
         tmp.gameObject.SetActive(false);
         hintLabel = tmp;
     }
@@ -421,6 +423,7 @@ public class PlaceableJumpA : MonoBehaviour
     void UseOrb()
     {
         float force = playerController.jumpForce * jumpForceFraction;
+        alreadyactivated = true;
         playerController.ForceJump(force);
         orbUsed = true;
         SoundManager.Instance?.PlaySFX(SoundID.OrbActivate);
@@ -436,7 +439,7 @@ public class PlaceableJumpA : MonoBehaviour
         playerInOrb = true;
         orbUsed = false;
 
-        if (hintLabel != null) hintLabel.gameObject.SetActive(true);
+        if (hintLabel != null && !alreadyactivated) hintLabel.gameObject.SetActive(true);
 
         // Modalità trampolino: anima e suona al tocco
         if (trampolinoSheet != null)

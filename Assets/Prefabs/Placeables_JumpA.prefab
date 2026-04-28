@@ -103,6 +103,9 @@ MonoBehaviour:
     m_Bits: 1335
   snapSpeed: 15
   jumpForceFraction: 0.7
+  hintFont: {fileID: 11400000, guid: 58aaac9fcad34ef408c18bc6abf4fef8, type: 2}
+  hintFontSize: 10
+  hintOffset: {x: 0, y: 1.1}
   bobAltezza: 0.08
   bobVelocita: 1.8
   bobInclinazione: 3
