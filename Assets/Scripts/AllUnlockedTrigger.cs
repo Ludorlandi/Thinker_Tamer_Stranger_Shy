@@ -23,13 +23,22 @@ public class AllUnlockedTrigger : MonoBehaviour
     [Tooltip("Colore del glitch di attivazione (diverso dal verde dei Gate).")]
     public Color glitchColor = new Color(0.9f, 0.3f, 0.05f, 1f); // arancione di default
 
+    // Mutex statico: impedisce a due istanze di eseguire ActivateRoutine in parallelo.
+    // Quando entrambi i trigger (5-type e 9-type) scattano nello stesso frame,
+    // il secondo aspetta che il primo abbia finito prima di partire.
+    private static bool s_routineRunning = false;
+
     private bool allUnlocked = false;
     private bool triggerStarted = false;
 
     void OnEnable()  => PlaceableUnlockManager.OnTypeUnlocked += OnTypeUnlocked;
     void OnDisable() => PlaceableUnlockManager.OnTypeUnlocked -= OnTypeUnlocked;
 
-    void Start() => CheckAllUnlocked();
+    void Start()
+    {
+        s_routineRunning = false;
+        CheckAllUnlocked();
+    }
 
     void OnTypeUnlocked(PlaceableTypeSO type) => CheckAllUnlocked();
 
@@ -63,7 +72,11 @@ public class AllUnlockedTrigger : MonoBehaviour
 
     IEnumerator ActivateRoutine()
     {
-        yield return new WaitForSeconds(1.5f);
+        // Se un'altra istanza sta già girando, aspetta che finisca.
+        while (s_routineRunning)
+            yield return null;
+
+        s_routineRunning = true;
 
         if (GlitchTransition.Instance != null)
         {
@@ -87,6 +100,7 @@ public class AllUnlockedTrigger : MonoBehaviour
             GlitchTransition.Instance.ResetColor();
         }
 
+        s_routineRunning = false;
         enabled = false;
     }
 }
